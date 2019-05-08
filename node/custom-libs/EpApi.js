@@ -6,7 +6,7 @@ module.exports = class EpApi {
         this.connection = mysql.createConnection({
             host: 'localhost',
             user: 'root',
-            password: 'qLgxNxavx9wuCru',
+            password: '',
             database: 'DB'
         });
     }

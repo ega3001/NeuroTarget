@@ -9,7 +9,7 @@ module.exports = class DBHandler{
         this.connection = mysql.createConnection({
             host     : 'localhost',
             user     : 'root',
-            password : 'qLgxNxavx9wuCru',
+            password : '',
             database : 'DB'
         });
         this.connection.connect(err => {
