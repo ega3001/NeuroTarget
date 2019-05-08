@@ -1,0 +1,26 @@
+{
+  "name": "nt",
+  "version": "1.0.0",
+  "private": true,
+  "description": "back-end neurotarget",
+  "main": "index.js",
+  "scripts": {
+    "test": "test"
+  },
+  "author": "Denis Vasilenko",
+  "license": "ISC",
+  "devDependencies": {},
+  "dependencies": {
+    "amqplib": "^0.5.3",
+    "await-timeout": "^0.3.0",
+    "bluebird": "^3.5.3",
+    "express": "^4.16.4",
+    "forever-monitor": "^1.7.1",
+    "http-build-query": "^0.7.0",
+    "mysql": "^2.16.0",
+    "promise-all-map": "^1.0.5",
+    "request": "^2.88.0",
+    "request-promise": "^4.2.4",
+    "sync-each": "^1.0.1"
+  }
+}
