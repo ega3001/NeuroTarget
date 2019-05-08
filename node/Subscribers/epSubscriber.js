@@ -110,6 +110,14 @@ module.exports = class epSubscriber {
                             if(!item || !item.keywords){
                                 return;
                             }
+
+                            words = words.filter(elem => {
+                                return elem.score > 30;
+                            });
+
+                            if(words.length == 0){
+                                return;
+                            }
                             
                             let send_content = {
                                 "id": decoded_content.response[i].id,
