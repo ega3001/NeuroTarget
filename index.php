@@ -11,7 +11,7 @@ require_once 'constants.php';
 
 $host = "localhost"; //"78.29.9.129";
 $login = "root";
-$password = "qLgxNxavx9wuCru"; //"qLgxNxavx9wuCru"
+$password = ""; //"qLgxNxavx9wuCru"
 $database = "DB";
 $dbhandler = new DBHandler($host, $login, $password, $database);
 
