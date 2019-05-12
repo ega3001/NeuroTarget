@@ -257,13 +257,10 @@ class DBHandler{
 	    }
 	}
 	//--------------------//
-	public function GetTagsFromQuery($id, $tags, $per, $pers, $comp = " >= ")
+	public function GetTagsFromQuery($id, $tags)
 	{
 	    if ($tags==null) {
 	        $tags=[];
-	    }
-	    if ($pers==null) {
-	        $pers=[];
 	    }
 	    
 	    $query = 'SELECT DISTINCT t.TagName
@@ -271,26 +268,20 @@ class DBHandler{
 	    	    JOIN `ParseIDVK-Tag` pt ON pt.ParseIDVK_ID=qp.ParseIDVK_ID 
 	    	    JOIN Tag t ON t.Tag_ID=pt.Tag_ID 
 	    	    WHERE 
-	            qp.Query_ID='.$id.' AND pt.Value >= '.$per;
+	            qp.Query_ID='.$id;
 
-	    for ($i = 0; $i < count($tags); $i++) {
-			$percent = floatval($pers[$i])/100.0;
-			if($percent < $per){
-				$percent = $per;
-			}
-			
+	    for ($i = 0; $i < count($tags); $i++) {			
 			$query = $query.' AND EXISTS (
 	                SELECT pt.Value 
 	    		    FROM Tag t 
 	    		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
 	    		    WHERE 
-	    		    t.TagName = "'.$tags[$i].'" AND
-	    		    pt.Value >= '.$percent.') ';
+	    		    t.TagName = "'.$tags[$i].'") ';
 	    }
 	        
 	    //$query = $query." LIMIT 400 "; // Сколько тегов будет в select2 ?
         $query = $query." ORDER BY TagName ASC ";
-	    
+	    // echo $query;
 	    $result = [];
 	   	foreach ($this->dbh->query($query) as $row) {
 	        $jsontst = json_encode($row);
@@ -302,59 +293,45 @@ class DBHandler{
 	    echo $json;
 	}
 	//--------------------//
-	public function GetTagsFromQuery1($id, $tags, $per, $pers)
-	{
-	    if ($tags==null) {
-	        $tags=[];
-	    }
-	    if ($pers==null) {
-	        $pers=[];
-	    }
-	    
-		$pers = array_map(function($item){return floatval($item/100.0);},$pers);
-		$per = floatval($per/100.0);
+	// public function GetTagsFromQuery1($id, $tags)
+	// {
+	//     if ($tags==null) {
+	//         $tags=[];
+	//     }
 
-	    $query= 'SELECT t.TagName, COUNT(p.ParseIDVK_ID) as cnt 
-	    FROM `Query-ParseIDVK` qp 
-	        JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID  
-	        JOIN `ParseIDVK-Tag` pt ON pt.ParseIDVK_ID=p.ParseIDVK_ID 
-	        JOIN Tag t ON t.Tag_ID=pt.Tag_ID 
-	        WHERE qp.Query_ID='.$id.' AND pt.Value >= '.$per;
+	//     $query= 'SELECT t.TagName, COUNT(p.ParseIDVK_ID) as cnt 
+	//     FROM `Query-ParseIDVK` qp 
+	//         JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID  
+	//         JOIN `ParseIDVK-Tag` pt ON pt.ParseIDVK_ID=p.ParseIDVK_ID 
+	//         JOIN Tag t ON t.Tag_ID=pt.Tag_ID 
+	//         WHERE qp.Query_ID='.$id;
 
-	    for ($i=0; $i < count($tags); $i++) {
-			$query=$query." AND EXISTS (SELECT pt.Value 
-	        FROM Tag t 
-	            JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
-	        WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-	            AND t.TagName=\"".$tags[$i]."\" 
-	            AND pt.Value >= ".$pers[$i].") ";
-	    }
+	//     for ($i=0; $i < count($tags); $i++) {
+	// 		$query=$query." AND EXISTS (SELECT pt.Value 
+	//         FROM Tag t 
+	//             JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
+	//         WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
+	//             AND t.TagName=\"".$tags[$i]."\") ";
+	//     }
 	    
-	    $query=$query.' GROUP BY t.TagName ORDER BY cnt DESC ';
+	//     $query=$query.' GROUP BY t.TagName ORDER BY cnt DESC ';
 	        
-	    //$query = $query." LIMIT 50 ";
-	    $result = [];
+	//     //$query = $query." LIMIT 50 ";
+	//     $result = [];
 	    
-	    foreach ($this->dbh->query($query) as $row) {
-	        $result[count($result)] = $row;
-	    }
+	//     foreach ($this->dbh->query($query) as $row) {
+	//         $result[count($result)] = $row;
+	//     }
 
-	    return json_encode($result);
-	}
+	//     return json_encode($result);
+	// }
 	//--------------------//
-	public function GetUsersFromQuery($query_id, $tags, $per, $pers)
+	public function GetUsersFromQuery($query_id, $tags)
 	{
 		//Проблема с уникальностью выходных файлов
 		if ($tags==null) {
 		    $tags=[];
 		}
-		
-		if ($pers==null) {
-		    $pers=[];
-		}
-
-		$pers = array_map(function($item){return floatval($item/100.0);},$pers);
-		$per = floatval($per/100.0);
 
 		$query="SELECT p.TextID, p.AvatarURL ";
 
@@ -362,9 +339,7 @@ class DBHandler{
 		    $query=$query.",(SELECT DISTINCT pt.Value FROM Tag t 
 		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
 		    WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-		    AND t.TagName=\"".$tags[$i]."\" 
-		    AND pt.Value >= ".$pers[$i]." ) 
-		    AS \"".$tags[$i]."\"";
+		    AND t.TagName=\"".$tags[$i]."\") AS \"".$tags[$i]."\"";
 		}
 		$query=$query." FROM Query q 
 		                JOIN `Query-ParseIDVK` qp ON q.Query_ID=qp.Query_ID 
@@ -375,8 +350,7 @@ class DBHandler{
 		    FROM Tag t 
 		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
 		    WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-		    AND t.TagName=\"".$tags[$i]."\" 
-		    AND pt.Value >= ".$pers[$i].") ";
+		    AND t.TagName=\"".$tags[$i]."\") ";
 		}
 		$query=$query." GROUP BY TextID ";
 
@@ -402,39 +376,20 @@ class DBHandler{
 		return json_encode($result);
 	}
 	//--------------------//
-	public function SaveUsersFromQuery($query_id, $tag, $per, $pers, $comp = " >= ")
+	public function SaveUsersFromQuery($query_id, $tag)
 	{
 		$tags = json_decode($tag);
 		if (gettype($tags)!=='array') {
 		    $tags=[];
 		}
-		$pers = json_decode($pers);
-		if (gettype($pers)!=='array') {
-		    $pers=[];
-		}
 
 		$query="SELECT p.TextID, p.AvatarURL";
 
-		$f = substr_count($comp, ">") > 0 ? true : false;
-
 		for ($i=0; $i < count($tags); $i++) { 
-			$percent = floatval($pers[$i])/100.0;
-			
-			if ($f) {
-				if($percent < $per){
-					$percent = $per;
-				}
-			} else {
-				if ($percent < $per) {
-					$percent = $per;
-				}
-			}
-
 		    $query=$query.",(SELECT pt.Value FROM Tag t 
 		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
 		    WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-		    AND t.TagName=\"".$tags[$i]."\"
-		    AND pt.Value".$comp.$percent.") 
+		    AND t.TagName=\"".$tags[$i]."\") 
 		    AS \"".$tags[$i]."\"";
 		}
 		$query=$query." FROM Query q 
@@ -442,24 +397,11 @@ class DBHandler{
 		                JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID 
 		                WHERE q.Query_ID=".$query_id;
 		for ($i=0; $i < count($tags); $i++) {
-			$percent = floatval($pers[$i])/100.0;
-			
-			if ($f) {
-				if($percent < $per){
-					$percent = $per;
-				}
-			} else {
-				if ($percent < $per) {
-					$percent = $per;
-				}
-			}
-
 		    $query=$query." AND EXISTS (SELECT pt.Value 
 		    FROM Tag t 
 		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
 		    WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-		    AND t.TagName=\"".$tags[$i]."\" 
-		    AND pt.Value".$comp.$percent.") ";
+		    AND t.TagName=\"".$tags[$i]."\") ";
 		}
 		$query=$query." GROUP BY TextID ";
 		if(count($tags)>0){

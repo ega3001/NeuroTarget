@@ -41,7 +41,7 @@ $(document).ready(() => {
   
   function ajaxSelect2Options(data) {
     $('.js-example-basic-multiple').select2({
-      minimumInputLength: 3,
+      //minimumInputLength: 3,
       ajax: {
         url: '/get_options',
         type: 'post',

@@ -128,17 +128,14 @@ $klein->respond('POST','/get_queries',function() use ($dbhandler){
 });
 
 $klein->respond('POST','/get_tags_from_query',function() use ($dbhandler){  
-    $per = floatval($_POST['per'])/100.0;
-    $comp = $_POST['comp'] ? '<' : '>=';
-
-    echo $dbhandler->GetTagsFromQuery($_POST['id'], $_POST['tags'], $per, $_POST['pers'], $comp);
+    echo $dbhandler->GetTagsFromQuery($_POST['id'], $_POST['tags']);
 });
 
 $klein->respond('GET','/get_users_from_query',function() use ($dbhandler){
     $per = floatval($_GET['per'])/100.0;
     $comp = $_GET['comp'] ? '<' : '>=';
 
-    echo $dbhandler->GetUsersFromQuery($_GET['query'], $_GET['tags'], $per, $_GET['pers'], $comp);
+    echo $dbhandler->GetUsersFromQuery($_GET['query'], $_GET['tags']);
 });
 
 $klein->respond('GET','/save_users_from_query',function() use ($dbhandler){
@@ -146,7 +143,7 @@ $klein->respond('GET','/save_users_from_query',function() use ($dbhandler){
     $per = floatval($per)/100.0;
     $comp = $_GET['comp'] ? '<' : '>=';
 
-    echo $dbhandler->SaveUsersFromQuery($_GET['query'], $_GET['tags'], $per, $_GET['pers'], $comp);
+    echo $dbhandler->SaveUsersFromQuery($_GET['query'], $_GET['tags']);
 });
 
 /**
