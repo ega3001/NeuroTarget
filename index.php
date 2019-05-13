@@ -23,6 +23,11 @@ $channel = $connection->channel();
 
 $klein = new Klein\Klein();
 
+function ExceptionString($e)
+{
+    return "\n". $e->getMessage(). "\nФайл: ". $e->getFile(). "\nСтрока: ". $e->getLine();
+}
+
 $klein->respond('POST', '/get_options', function(){
     $data = $_POST['data'];
     $search = $_POST['search'];
@@ -127,15 +132,34 @@ $klein->respond('POST','/get_queries',function() use ($dbhandler){
     echo $dbhandler->GetQueries();
 });
 
-$klein->respond('POST','/get_tags_from_query',function() use ($dbhandler){  
-    echo $dbhandler->GetTagsFromQuery($_POST['id'], $_POST['tags']);
+$klein->respond('POST','/get_tags_from_query', function() use ($dbhandler){
+    $result = [];
+    try {
+        $result = $dbhandler->GetTagsFromQuery($_POST['id'], $_POST['tags']);
+    } catch(Exception $e) {
+        echo ExceptionString($e);
+    }
+    echo $result;
 });
 
-$klein->respond('GET','/get_users_from_query',function() use ($dbhandler){
-    $per = floatval($_GET['per'])/100.0;
-    $comp = $_GET['comp'] ? '<' : '>=';
+$klein->respond('POST','/get_tags', function() use ($dbhandler){
+    $result = [];
+    try {
+        $result = $dbhandler->GetTags();
+    } catch(Exception $e) {
+        echo ExceptionString($e);
+    }
+    echo $result;
+});
 
-    echo $dbhandler->GetUsersFromQuery($_GET['query'], $_GET['tags']);
+$klein->respond('POST','/get_users_from_query', function() use ($dbhandler){
+    $result = [];
+    try {
+        $result = $dbhandler->GetUsersFromQuery($_POST['id'], $_POST['tags']);
+    } catch(Exception $e) {
+        echo ExceptionString($e);
+    }
+    echo $result;
 });
 
 $klein->respond('GET','/save_users_from_query',function() use ($dbhandler){

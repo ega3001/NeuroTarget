@@ -1,6 +1,7 @@
 <?php
 
 require __DIR__ . '/auth_vendor/autoload.php';
+require 'ClusterHandler.php';
 
 class DBHandler{
 	var $host;
@@ -257,121 +258,111 @@ class DBHandler{
 	    }
 	}
 	//--------------------//
-	public function GetTagsFromQuery($id, $tags)
-	{
-	    if ($tags==null) {
-	        $tags=[];
-	    }
+	public function GetTags()
+	{   
+	    $query = 'select TagName from Tag ORDER BY TagName ASC';
 	    
-	    $query = 'SELECT DISTINCT t.TagName
-	    	    FROM `Query-ParseIDVK` qp 
-	    	    JOIN `ParseIDVK-Tag` pt ON pt.ParseIDVK_ID=qp.ParseIDVK_ID 
-	    	    JOIN Tag t ON t.Tag_ID=pt.Tag_ID 
-	    	    WHERE 
-	            qp.Query_ID='.$id;
+	    $run = $this->dbh->prepare($query);
 
-	    for ($i = 0; $i < count($tags); $i++) {			
-			$query = $query.' AND EXISTS (
-	                SELECT pt.Value 
-	    		    FROM Tag t 
-	    		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
-	    		    WHERE 
-	    		    t.TagName = "'.$tags[$i].'") ';
+	    if( !$run->execute() ){
+	    	throw new Exception('Ошибка при выполнении запроса. '. $query);
 	    }
-	        
-	    //$query = $query." LIMIT 400 "; // Сколько тегов будет в select2 ?
-        $query = $query." ORDER BY TagName ASC ";
-	    // echo $query;
+
 	    $result = [];
-	   	foreach ($this->dbh->query($query) as $row) {
-	        $jsontst = json_encode($row);
-	        if($jsontst != false){
-	           $result[count($result)] = $row;
+	    foreach ($run->fetchAll() as $row) {
+	        if(json_encode($row) == false){
+	        	throw new Exception(
+	        		'Некорректный тег в базе (скорее всего). '. 
+					count($result) != 0 ? 
+					'тег после "'. $result[count($result) - 2]. '" по алфавиту' : 
+					'первый тег по алфавиту'
+				);
 	        }
+	        $result[count($result)] = $row;
 	    }
+
 	    $json = json_encode($result);
 	    echo $json;
 	}
 	//--------------------//
-	// public function GetTagsFromQuery1($id, $tags)
-	// {
-	//     if ($tags==null) {
-	//         $tags=[];
-	//     }
-
-	//     $query= 'SELECT t.TagName, COUNT(p.ParseIDVK_ID) as cnt 
-	//     FROM `Query-ParseIDVK` qp 
-	//         JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID  
-	//         JOIN `ParseIDVK-Tag` pt ON pt.ParseIDVK_ID=p.ParseIDVK_ID 
-	//         JOIN Tag t ON t.Tag_ID=pt.Tag_ID 
-	//         WHERE qp.Query_ID='.$id;
-
-	//     for ($i=0; $i < count($tags); $i++) {
-	// 		$query=$query." AND EXISTS (SELECT pt.Value 
-	//         FROM Tag t 
-	//             JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
-	//         WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-	//             AND t.TagName=\"".$tags[$i]."\") ";
-	//     }
-	    
-	//     $query=$query.' GROUP BY t.TagName ORDER BY cnt DESC ';
-	        
-	//     //$query = $query." LIMIT 50 ";
-	//     $result = [];
-	    
-	//     foreach ($this->dbh->query($query) as $row) {
-	//         $result[count($result)] = $row;
-	//     }
-
-	//     return json_encode($result);
-	// }
-	//--------------------//
-	public function GetUsersFromQuery($query_id, $tags)
+	public function GetTagsFromQuery($query_id, $cluster)
 	{
-		//Проблема с уникальностью выходных файлов
-		if ($tags==null) {
-		    $tags=[];
-		}
+	    $query = 
+	    	'	select t.TagName, COUNT(p.ParseIDVK_ID) as cnt 
+	    		FROM  `Query-ParseIDVK` qp 
+				JOIN   ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID  
+				JOIN  `ParseIDVK-Tag` pt ON pt.ParseIDVK_ID=p.ParseIDVK_ID 
+				JOIN   Tag t ON t.Tag_ID=pt.Tag_ID 
+				WHERE  qp.Query_ID= '. $query_id;
 
-		$query="SELECT p.TextID, p.AvatarURL ";
+		if( $cluster != '' ){
+			$query .= ' AND EXISTS ( ';
 
-		for ($i=0; $i < count($tags); $i++) {
-		    $query=$query.",(SELECT DISTINCT pt.Value FROM Tag t 
-		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
-		    WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-		    AND t.TagName=\"".$tags[$i]."\") AS \"".$tags[$i]."\"";
-		}
-		$query=$query." FROM Query q 
-		                JOIN `Query-ParseIDVK` qp ON q.Query_ID=qp.Query_ID 
-		                JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID 
-						WHERE q.Query_ID=".$query_id;
-		for ($i=0; $i < count($tags); $i++) {
-		    $query=$query." AND EXISTS (SELECT pt.Value 
-		    FROM Tag t 
-		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
-		    WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-		    AND t.TagName=\"".$tags[$i]."\") ";
-		}
-		$query=$query." GROUP BY TextID ";
+			$user_id = $this->GetUserIdByQueryId($query_id);
+			$clh = new ClusterHandler($this->dbh, $user_id);
+			$cluster_query = $clh->GetQuery($cluster);
 
-		if(count($tags)>0){
-		    $query=$query." ORDER BY ";
+			$query .= $cluster_query. ' )';
 		}
-		for ($i=0; $i < count($tags); $i++){
-			$query=$query."\"".$tags[$i]."\"";
-			if($i!=count($tags)-1){
-			    $query = $query.',';
-			}
-		}
-		if(count($tags)>0){
-		    $query=$query." DESC ";
-		}
-		//$query=$query." LIMIT 50 ";
-		
+	    
+	    $query .= ' GROUP BY t.TagName ORDER BY cnt DESC';
+
+	    $run = $this->dbh->prepare($query);
+
+	    if( !$run->execute() ){
+	    	throw new Exception('Ошибка при выполнении запроса. '. $query);
+	    }
+
 		$result = [];
-		foreach ($this->dbh->query($query) as $row) {
-		    $result[count($result)] = $row;
+	    foreach ($run->fetchAll() as $row) {
+	        if(json_encode($row) == false){
+	        	throw new Exception(
+	        		'Некорректный тег в базе (скорее всего).'. 
+	        		'Теги, использованные в запросe: '. implode(", ", $tags)
+	        	);
+	        }
+	        $result[count($result)] = $row;
+	    }
+
+	    return json_encode($result);
+	}
+	//--------------------//
+	public function GetUsersFromQuery($query_id, $cluster)
+	{
+		//Проблема с уникальностью выходных файлов ?
+
+		$query =
+			'	select p.TextID, p.AvatarURL
+				FROM Query q 
+				JOIN `Query-ParseIDVK` qp ON q.Query_ID=qp.Query_ID 
+				JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID 
+				WHERE q.Query_ID= '. $query_id;
+
+		if( $cluster != '' ){
+			$query .= ' AND EXISTS ( ';
+
+			$user_id = $this->GetUserIdByQueryId($query_id);
+			$clh = new ClusterHandler($this->dbh, $user_id);
+			$cluster_query = $clh->GetQuery($cluster);
+			
+			$query .= $cluster_query. ' )';
 		}
+
+		$query .= " GROUP BY TextID ";
+
+		$run = $this->dbh->prepare($query);
+
+		if( !$run->execute() ){
+			throw new Exception('Ошибка при выполнении запроса.'. $query);
+		}
+
+		$result = [];
+		foreach ($run->fetchAll() as $row) {
+	        if(json_encode($row) == false){
+	        	throw new Exception('Ошибка при расшифровке объекта.');
+	        }
+	        $result[count($result)] = $row;
+	    }
 
 		return json_encode($result);
 	}
@@ -494,6 +485,14 @@ class DBHandler{
 		$userId = $this->dbh->query($query);
 		$userId = $userId->fetchAll();
 		return $userId[0][0];
+	}
+	//---------------------------||
+	public function GetUserIdByQueryId($query_id)
+	{
+		$query = 'select User_ID FROM Query WHERE Query_ID='. $query_id;
+		$userId = $this->dbh->query($query);
+		$userId = $userId->fetchAll()[0][0];
+		return $userId;
 	}
 	//---------------------------||
 	public function AddAvatarURLSByIds($ids, $avatarUrls)
