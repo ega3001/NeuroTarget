@@ -142,6 +142,16 @@ $klein->respond('POST','/get_tags_from_query', function() use ($dbhandler){
     echo $result;
 });
 
+$klein->respond('POST','/save_cluster', function() use ($dbhandler){
+    $result = [];
+    try {
+        $result = $dbhandler->SaveCluster($_POST['user_id'], $_POST['cluster_name'], $_POST['cluster']);
+    } catch(Exception $e) {
+        echo ExceptionString($e);
+    }
+    echo $result;
+});
+
 $klein->respond('POST','/get_tags', function() use ($dbhandler){
     $result = [];
     try {

@@ -258,6 +258,28 @@ class DBHandler{
 	    }
 	}
 	//--------------------//
+	public function SaveCluster($user_id, $cluster_name, $cluster)
+	{
+		$query =
+			"	insert INTO `Cluster`(`id`, `ClusterName`, `ClusterText`) VALUES ({$user_id}, \"{$cluster_name}\", ";
+
+		if( $cluster != '' ){
+			$clh = new ClusterHandler($this->dbh, $user_id);
+			$cluster_query = $clh->GetQuery($cluster);
+			
+			$cluster_query = addcslashes($cluster_query, '"');
+			$query .= ' "'. $cluster_query. '") ';
+		}
+
+		$run = $this->dbh->prepare($query);
+
+		if( !$run->execute() ){
+			throw new Exception('Ошибка при выполнении запроса.'. $query);
+		}
+
+		return true;
+	}
+	//--------------------//
 	public function GetTags()
 	{   
 	    $query = 'select TagName from Tag ORDER BY TagName ASC';
