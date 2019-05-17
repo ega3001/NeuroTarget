@@ -18,7 +18,7 @@ class ClusterHandler
 		$this->operations = [
 			'AND' => ' INTERSECT ',
 			'OR'  => ' UNION ',
-			'DIFF'  => ' <DIFFERENT> ',
+			'DIFF'  => ' EXCEPT ',
 		];
 		$this->set = [
 			'_Operation' => 'AutoOperation',
@@ -40,6 +40,7 @@ class ClusterHandler
 		switch ($elem) {
 			case 'AND':
 			case 'OR' :
+			case 'DIFF' :
 				return '_Operation';
 			case '('  :
 			case ')'  :
