@@ -16,10 +16,10 @@ module.exports = class dbSubscriber{
 
                 ch.consume(q, async (msg) => {
 
-                    console.log("Подготавливаю данные для БД");
+                    console.log("db : Подготавливаю данные для БД");
 
                     let decoded_content = JSON.parse(msg.content.toString());
-                    console.log(decoded_content, " записей.");
+                    console.log("db : Принял ", decoded_content.length, " записей.");
 
                     try{
                         await dbh.HandlePersons(decoded_content);//Тут возвращается промис
@@ -27,9 +27,9 @@ module.exports = class dbSubscriber{
                     catch(err){
                         fs.appendFileSync("errors_log.txt", JSON.stringify(decoded_content) + " : " + err + "\r\n", function(error){
                             if(error) // если возникла ошибка
-                                console.log("Запись ошибки (БД) завершена");
+                                console.log("db : Запись ошибки (БД) завершена");
                             else
-                                console.log("Запись ошибки (БД) НЕ завершена");
+                                console.log("db : Запись ошибки (БД) НЕ завершена");
                         });
                     }
                     

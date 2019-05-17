@@ -4,19 +4,13 @@ require __DIR__ . '/auth_vendor/autoload.php';
 require 'ClusterHandler.php';
 
 class DBHandler{
-	var $host;
-	var $login;
-	var $password;
-	var $database;
+	var $dbname;
 	var $dbh;
 	var $auth;
-	public function DBHandler($host, $login, $password, $database)
+	public function DBHandler($bdtype, $dbname, $host, $port, $login, $password)
 	{
-		$this->host = $host;
-		$this->login = $login;
-		$this->password = $password;
-		$this->database = $database;
-		$this->dbh = new PDO("mysql:host={$host};dbname={$database}", $login, $password);
+		$this->dbname = $dbname;
+		$this->dbh = new PDO("{$bdtype}:host={$host};dbname={$dbname};port={$port}", $login, $password);
 		$this->auth = new \Delight\Auth\Auth($this->dbh);
 	}
 	private function GetNextQueryPack($arr, &$first, $concat = '', $lFrame = '', $rFrame = '')
@@ -82,21 +76,11 @@ class DBHandler{
 		}
 
 		if (empty($ids)) {
-		    //$_SESSION['file_error']='Файл не содержит корректные id.';
-
-		    // return "<script>self.location='/load';</script>";
-		    // die();
-
 		    return json_encode(array("success"=>false,"data"=>'Файл не содержит корректные id'));
-
 		} elseif (!$this->AddQuery($userId, $queryName)){
-		    // $_SESSION['file_error']='Запрос с таким названием у вас уже существует.';
-		    // return "<script>self.location='/load';</script>";
-		    // die();
-			
 		    return json_encode(array("success"=>false,"data"=>'Запрос с таким названием у вас уже существует'));
 		}
-
+		
 		//Фильтр
 		$ids = 	array_unique($ids);
 		$ids = 	array_map( function($elem){
@@ -107,7 +91,7 @@ class DBHandler{
 		$queryId = $this->GetQueryId($userId, $queryName);
 		$this->AddQueryParseIDVK($queryId, $pids);
 
-		return json_encode(array("success"=>true,"data"=>'Запрос успешно создан'));
+		return json_encode(array('success' =>true,'data'=>'Query created'));
 	}
 	/*=======================================================================
 	===========================QUERY_FUNCTIONS===============================
@@ -115,26 +99,26 @@ class DBHandler{
 	public function CheckInvite($invite)//$_POST['invite']
 	{
 		if (isset($invite)) {
-	        $query = "SELECT * FROM Referal WHERE User_ID IS NULL AND Token = '".$invite."'";
+	        $query = "select * FROM \"Referal\" WHERE \"User_ID\" IS NULL AND \"Token\" = '{$invite}'";
 	        $result = [];
 	        foreach ($this->dbh->query($query) as $row) {
 				$result[count($result)] = $row;
 	        }
 	        if (count($result) > 0)
 	        	return 'Success';
-	        return "Failed";
+	        return 'Failed';
    		}
-        return "Failed";
+        return 'Failed';
 	}
 	//--------------------//
 	public function ConnectInvite($invite, $id)//$_POST['invite'] , $_POST['id']
 	{
 		if (isset($invite) AND isset($id)) {
-	        $query = "UPDATE Referal SET User_ID = '".$id."' WHERE Token = '".$invite."'";
+	        $query = "update \"Referal\" SET \"User_ID\" = '{$id}' WHERE \"Token\" = '{$invite}'";
 	        $this->dbh->query($query);
 	        return 'Success';
     	}
-        return "Failed";
+        return 'Failed';
 	}
 	//--------------------//
 	public function LogIn($email, $pass)
@@ -143,7 +127,7 @@ class DBHandler{
 	        try {
 	            //$auth = $GLOBALS['auth'];
 	            $this->auth->login($email, $pass, null);
-	            $query = "SELECT `check_invite`('".$email."')";
+	            $query = "select \"check_invite\"('".$email."')";
 	            //echo $query;
 	            
 	            $result = [];
@@ -151,8 +135,8 @@ class DBHandler{
 	                $result[count($result)] = $row;
 	            }
 
-	            if (count($result) > 0 AND $result[0][0] === '1') {
-	            	$query = "SELECT `id` FROM `users` WHERE email = '{$email}'";
+	            if (count($result) > 0 AND $result[0][0] == '1') {
+	            	$query = "select \"id\" FROM \"users\" WHERE \"email\" = '{$email}'";
 	            	$res = $this->dbh->query($query);
 	            	$userId = $res->fetchAll()[0][0];
 	            	session_start();
@@ -193,7 +177,7 @@ class DBHandler{
 	        return 'invalid password';
 	    }
 	    catch (\Delight\Auth\UserAlreadyExistsException $e) {
-	        $query = "SELECT `check_invite`('".$email."')";
+	        $query = "select \"check_invite\"('{$email}')";
 	        //echo $query;
 	        $result = [];
 	        foreach ($this->dbh->query($query) as $row) {
@@ -246,7 +230,7 @@ class DBHandler{
 	{
 	    if ($this->auth->isLoggedIn()) {
 	        $user = $this->auth->getUserId();
-	        $query='SELECT Query_ID, QueryName FROM Query WHERE User_ID='.$user;
+	        $query="select \"Query_ID\", \"QueryName\" FROM \"Query\" WHERE \"User_ID\"='{$user}'";
 	        $result = [];
 	        foreach ($this->dbh->query($query) as $row) {
 	            $result[count($result)] = $row;
@@ -258,17 +242,19 @@ class DBHandler{
 	    }
 	}
 	//--------------------//
-	public function SaveCluster($user_id, $cluster_name, $cluster)
+	public function SaveCluster($cluster_name, $cluster)
 	{
+		$user_id = $this->auth->getUserId();
+		str_replace("'", "''", $cluster_name); //Экранирование одинарных кавычек
 		$query =
-			"	insert INTO `Cluster`(`id`, `ClusterName`, `ClusterText`) VALUES ({$user_id}, \"{$cluster_name}\", ";
+			"	insert INTO \"Cluster\"(\"id\", \"ClusterName\", \"ClusterText\") VALUES ({$user_id}, '{$cluster_name}', ";
 
 		if( $cluster != '' ){
 			$clh = new ClusterHandler($this->dbh, $user_id);
 			$cluster_query = $clh->GetQuery($cluster);
 			
-			$cluster_query = addcslashes($cluster_query, '"');
-			$query .= ' "'. $cluster_query. '") ';
+			$cluster_query = str_replace("'", "''", $cluster_query); // Экранирование одинарной кавычки для PostgreSQL
+			$query .= ' \''. $cluster_query. '\') ';
 		}
 
 		$run = $this->dbh->prepare($query);
@@ -282,7 +268,7 @@ class DBHandler{
 	//--------------------//
 	public function GetTags()
 	{   
-	    $query = 'select TagName from Tag ORDER BY TagName ASC';
+	    $query = "select \"TagName\" from \"Tag\" ORDER BY \"TagName\" ASC";
 	    
 	    $run = $this->dbh->prepare($query);
 
@@ -303,19 +289,44 @@ class DBHandler{
 	        $result[count($result)] = $row;
 	    }
 
-	    $json = json_encode($result);
-	    echo $json;
+	    echo json_encode($result);
 	}
 	//--------------------//
-	public function GetTagsFromQuery($query_id, $cluster)
+	public function GetClusters()
+	{   
+		$user_id = $this->auth->getUserId();
+	    $query = "select \"ClusterName\" from \"Cluster\" where \"id\"={$user_id} ORDER BY \"ClusterName\" ASC";
+	    
+	    $run = $this->dbh->prepare($query);
+
+	    if( !$run->execute() ){
+	    	throw new Exception('Ошибка при выполнении запроса. '. $query);
+	    }
+
+	    $result = [];
+	    foreach ($run->fetchAll() as $row) {
+	        if(json_encode($row) == false){
+	        	throw new Exception(
+	        		'Некорректный кластер в базе (скорее всего). '. 
+					count($result) != 0 ? 
+					'тег после "'. $result[count($result) - 2]. '" по алфавиту' : 
+					'первый кластер по алфавиту'
+				);
+	        }
+	        $result[count($result)] = $row;
+	    }
+
+	    echo json_encode($result);
+	}
+	//--------------------//
+	public function GetTagsStatFromQuery($query_id, $cluster)
 	{
 	    $query = 
-	    	'	select t.TagName, COUNT(p.ParseIDVK_ID) as cnt 
-	    		FROM  `Query-ParseIDVK` qp 
-				JOIN   ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID  
-				JOIN  `ParseIDVK-Tag` pt ON pt.ParseIDVK_ID=p.ParseIDVK_ID 
-				JOIN   Tag t ON t.Tag_ID=pt.Tag_ID 
-				WHERE  qp.Query_ID= '. $query_id;
+	    	'	select t."TagName", COUNT(pt."ParseIDVK_ID") as cnt 
+	    		FROM  "Query-ParseIDVK" qp  
+	    		JOIN  "ParseIDVK-Tag" pt ON pt."ParseIDVK_ID"=qp."ParseIDVK_ID"
+				JOIN   "Tag" t ON t."Tag_ID"=pt."Tag_ID" 
+				WHERE  qp."Query_ID"= '. $query_id;
 
 		if( $cluster != '' ){
 			$query .= ' AND EXISTS ( ';
@@ -327,7 +338,48 @@ class DBHandler{
 			$query .= $cluster_query. ' )';
 		}
 	    
-	    $query .= ' GROUP BY t.TagName ORDER BY cnt DESC';
+	    $query .= ' GROUP BY t."TagName" ORDER BY cnt DESC';
+
+	    $run = $this->dbh->prepare($query);
+
+	    if( !$run->execute() ){
+	    	throw new Exception('Ошибка при выполнении запроса. '. $query);
+	    }
+
+		$result = [];
+	    foreach ($run->fetchAll() as $row) {
+	        if(json_encode($row) == false){
+	        	throw new Exception(
+	        		'Некорректный тег в базе (скорее всего).'. 
+	        		'Теги, использованные в запросe: '. implode(", ", $tags)
+	        	);
+	        }
+	        $result[count($result)] = $row;
+	    }
+
+	    return json_encode($result);
+	}
+	//--------------------//
+	public function GetTagsFromQuery($query_id, $cluster)
+	{
+		$query = 
+	    	'	select distinct t."TagName"
+	    		FROM  "Query-ParseIDVK" qp  
+	    		JOIN  "ParseIDVK-Tag" pt ON pt."ParseIDVK_ID"=qp."ParseIDVK_ID"
+				JOIN   "Tag" t ON t."Tag_ID"=pt."Tag_ID" 
+				WHERE  qp."Query_ID"= '. $query_id;
+
+		if( $cluster != '' ){
+			$query .= ' AND EXISTS ( ';
+
+			$user_id = $this->GetUserIdByQueryId($query_id);
+			$clh = new ClusterHandler($this->dbh, $user_id);
+			$cluster_query = $clh->GetQuery($cluster);
+
+			$query .= $cluster_query. ' )';
+		}
+	    
+	    $query .= ' ORDER BY t."TagName" ASC';
 
 	    $run = $this->dbh->prepare($query);
 
@@ -354,11 +406,11 @@ class DBHandler{
 		//Проблема с уникальностью выходных файлов ?
 
 		$query =
-			'	select p.TextID, p.AvatarURL
-				FROM Query q 
-				JOIN `Query-ParseIDVK` qp ON q.Query_ID=qp.Query_ID 
-				JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID 
-				WHERE q.Query_ID= '. $query_id;
+			'	select distinct p."TextID", p."AvatarURL"
+				FROM "Query" q  
+				JOIN "Query-ParseIDVK" qp ON q."Query_ID"=qp."Query_ID" 
+				JOIN "ParseIDVK" p ON qp."ParseIDVK_ID"=p."ParseIDVK_ID" 
+				WHERE q."Query_ID"= '. $query_id;
 
 		if( $cluster != '' ){
 			$query .= ' AND EXISTS ( ';
@@ -369,8 +421,6 @@ class DBHandler{
 			
 			$query .= $cluster_query. ' )';
 		}
-
-		$query .= " GROUP BY TextID ";
 
 		$run = $this->dbh->prepare($query);
 
@@ -391,6 +441,12 @@ class DBHandler{
 	//--------------------//
 	public function SaveUsersFromQuery($query_id, $tag)
 	{
+		/**
+		 * Не использовать!
+		 * Логику работы с этой функцией необходимо поменять
+		 */
+		return 'useless function SaveUsersFromQuery';
+
 		$tags = json_decode($tag);
 		if (gettype($tags)!=='array') {
 		    $tags=[];
@@ -449,12 +505,19 @@ class DBHandler{
 	//=====================================================================*/
 	public function GetIdsByTags($queryId, $tagsArr, $score = 0.5)
 	{
-		$q_start = " SELECT q.QueryName, p.TextID, p.AvatarURL, ";
-		$q_join = " FROM Query q 
-					JOIN `Query-ParseIDVK` qp ON q.Query_ID=qp.Query_ID 
-					JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID 
-					WHERE q.Query_ID={$queryId} ";
-	    $q_end = "GROUP BY TextID";
+		/**
+		 * Не использовать!
+		 * Логику работы с этой функцией необходимо поменять
+		 */
+		return 'useless function GetIdsByTags';
+
+		$q_start = ' select q."QueryName", p."TextID", p."AvatarURL", ';
+		$q_join = 
+			'	FROM "Query" q 
+				JOIN "Query-ParseIDVK" qp ON q.Query_ID=qp.Query_ID 
+				JOIN "ParseIDVK" p ON qp."ParseIDVK_ID"=p."ParseIDVK_ID" 
+				WHERE q."Query_ID"='. $queryId;
+	    $q_end = 'GROUP BY "TextID"';
 		$qpack = 800;
 		$first = 0;
 		$res = array();
@@ -485,7 +548,7 @@ class DBHandler{
 	//---------------------------||
 	public function GetPidById($id)
 	{
-		$query = "SELECT ParseIDVK_ID FROM ParseIDVK WHERE TextID='{$id}'";
+		$query = "select \"ParseIDVK_ID\" FROM \"ParseIDVK\" WHERE \"TextID\"='{$id}'";
 		
 		foreach ($this->dbh->query($query) as $row) {
 			return $row['ParseIDVK_ID'];
@@ -503,7 +566,7 @@ class DBHandler{
 	//---------------------------||
 	public function GetUserId($login, $passHash)
 	{
-		$query = "SELECT User_ID FROM User WHERE Login='{$login}'";
+		$query = "select \"User_ID\" FROM \"User\" WHERE \"Login\"='{$login}'";
 		$userId = $this->dbh->query($query);
 		$userId = $userId->fetchAll();
 		return $userId[0][0];
@@ -511,7 +574,7 @@ class DBHandler{
 	//---------------------------||
 	public function GetUserIdByQueryId($query_id)
 	{
-		$query = 'select User_ID FROM Query WHERE Query_ID='. $query_id;
+		$query = 'select "User_ID" FROM "Query" WHERE "Query_ID"='. $query_id;
 		$userId = $this->dbh->query($query);
 		$userId = $userId->fetchAll()[0][0];
 		return $userId;
@@ -520,25 +583,25 @@ class DBHandler{
 	public function AddAvatarURLSByIds($ids, $avatarUrls)
 	{
 		for ($i=0; $i < count($ids); $i++) { 
-			$query = "UPDATE ParseIDVK SET AvatarURL='{$avatarUrls[$i]}' WHERE TextID='{$ids[$i]}'";
+			$query = "update \"ParseIDVK\" SET \"AvatarURL\"='{$avatarUrls[$i]}' WHERE \"TextID\"='{$ids[$i]}'";
 			$this->dbh->query($query);
 		}
 	}
 	//---------------------------||
 	public function RefreshPersonId($userFormatId, $id)
 	{
-		$query = "UPDATE `ParseIDVK` SET TextID='{$id}' WHERE TextID='{$userFormatId}'";
+		$query = "update \"ParseIDVK\" SET \"TextID\"='{$id}' WHERE \"TextID\"='{$userFormatId}'";
 		// echo "\n".$query."\n";
 		$res = $this->dbh->query($query);
 		if($res){
 			return;
 		}
-		$query = "SELECT `ParseIDVK_ID` FROM `ParseIDVK` WHERE TextID='{$id}'";
+		$query = "select \"ParseIDVK_ID\" FROM \"ParseIDVK\" WHERE \"TextID\"='{$id}'";
 		$res = $this->dbh->query($query)->fetchAll()[0][0];
 		if($res == NULL){
 			return;
 		}
-		$query = "DELETE FROM `ParseIDVK` WHERE TextID='{$userFormatId}'";
+		$query = "delete FROM \"ParseIDVK\" WHERE \"TextID\"='{$userFormatId}'";
 		$this->dbh->query($query);
 	}
 	public function AddAvatarURLSByPersons($persons)
@@ -547,14 +610,15 @@ class DBHandler{
 			if(!$value['has_photo']) {
 				continue;
 			}
-			$query = "UPDATE ParseIDVK SET AvatarURL='{$value['photo_max_orig']}' WHERE TextID='{$value['id']}'";
+			$query = "update \"ParseIDVK\" SET \"AvatarURL\"='{$value['photo_max_orig']}' WHERE \"TextID\"='{$value['id']}'";
 			$this->dbh->query($query);
 		}
 	}
 	//---------------------------||
 	public function GetTidByTag($tag)
 	{
-		$query = "SELECT Tag_ID FROM Tag WHERE TagName=\"{$tag}\"";
+		$tag = str_replace("'", "''", $tag);
+		$query = "select \"Tag_ID\" FROM \"Tag\" WHERE \"TagName\"='{$tag}'";
 		
 		foreach ($this->dbh->query($query) as $row) {
 			return $row['Tag_ID'];
@@ -572,7 +636,8 @@ class DBHandler{
 	//---------------------------||
 	public function AddTag($tag)
 	{
-		$query = "INSERT INTO Tag(TagName) VALUES(\"{$tag}\")";
+		$tag = str_replace("'", "''", $tag);
+		$query = "insert INTO \"Tag\"(\"TagName\") VALUES('{$tag}')";
 		$this->dbh->query($query);
 	}
 
@@ -586,7 +651,7 @@ class DBHandler{
 	public function AddValue($person)
 	{
 		foreach ($person['keywords'] as $keyword) {
-			$query = "INSERT INTO `ParseIDVK-Tag`(ParseIDVK_ID, Tag_ID, Value) VALUES('{$person['id']}',\"{$keyword['keyword']}\",'{$keyword['score']}')";
+			$query = "insert INTO \"ParseIDVK-Tag\"(\"ParseIDVK_ID\", \"Tag_ID\", \"Value\") VALUES('{$person['id']}', '{$keyword['keyword']}', '{$keyword['score']}')";
 			$this->dbh->query($query);
 		}
 	}
@@ -600,7 +665,7 @@ class DBHandler{
 
 	public function GetQueryId($userId, $queryName)
 	{
-		$query = "SELECT Query_ID FROM Query WHERE User_ID={$userId} AND QueryName=\"{$queryName}\"";
+		$query = "select \"Query_ID\" FROM \"Query\" WHERE \"User_ID\"={$userId} AND \"QueryName\"='{$queryName}'";
 		$queryId = $this->dbh->query($query);
 		$queryId = $queryId->fetchAll()[0][0];
 		return $queryId;
@@ -610,7 +675,7 @@ class DBHandler{
 	//=====================================================================*/
 	public function AddUser($login, $passHash)
 	{
-		$query = "INSERT INTO User(Login, PassHash) VALUES(\"{$login}\", '{$passHash}')";
+		$query = "insert INTO \"User\"(\"Login\", \"PassHash\") VALUES('{$login}', '{$passHash}')";
 		$this->dbh->query($query);
 		return GetUserId($login, $passHash);
 	}
@@ -618,12 +683,12 @@ class DBHandler{
 	public function AddQuery($userId, $queryName)
 	{
 		//Check
-		$query = "SELECT Query_ID FROM Query WHERE User_ID='{$userId}' AND QueryName=\"{$queryName}\"";
+		$query = "select \"Query_ID\" FROM \"Query\" WHERE \"User_ID\"='{$userId}' AND \"QueryName\"='{$queryName}'";
 		$res = $this->dbh->query($query);
 		if( isset($res->fetchAll()[0][0]) )
 			return false;
 		//
-		$query = "INSERT INTO Query(User_ID, QueryName) VALUES('{$userId}',\"{$queryName}\")";
+		$query = "insert INTO \"Query\"(\"User_ID\", \"QueryName\") VALUES('{$userId}','{$queryName}')";
 		$this->dbh->query($query);
 
 		return true;
@@ -633,19 +698,19 @@ class DBHandler{
 	{
 		$first = 0;
 		while($first < count($idsArr)){
-			$pack = $this->GetNextQueryPack($idsArr, $first, ',', "('", "')");
-			$query = "INSERT IGNORE INTO ParseIDVK(TextID) VALUES{$pack}";
+			$pack 	= $this->GetNextQueryPack($idsArr, $first, ',', "('", "')");
+			$query 	= "insert INTO \"ParseIDVK\"(\"TextID\") VALUES{$pack}";
+			$query .= "ON CONFLICT DO NOTHING";
 			$this->dbh->query($query);
 		}
 		return $this->GetPidsByIds($idsArr);
 	}
-
 	public function AddQueryParseIDVK($queryId, $pids)
 	{
 		$first = 0;
 		while($first < count($pids)){
 			$pack = $this->GetNextQueryPack($pids, $first, ',', "('{$queryId}','", "')");
-			$query = "INSERT INTO `Query-ParseIDVK`(Query_ID, ParseIDVK_ID) VALUES{$pack}";
+			$query = "insert INTO \"Query-ParseIDVK\"(\"Query_ID\", \"ParseIDVK_ID\") VALUES{$pack}";
 			$this->dbh->query($query);
 		}
 	}
