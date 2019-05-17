@@ -16,8 +16,9 @@ class ClusterHandler
 		$this->user_id = $user_id;
 		$this->dbh = $dbh;
 		$this->operations = [
-			'AND' => 'INTERSECT', // Не работает с MySQL
+			'AND' => ' INTERSECT ',
 			'OR'  => ' UNION ',
+			'DIFF'  => ' <DIFFERENT> ',
 		];
 		$this->set = [
 			'_Operation' => 'AutoOperation',
@@ -26,11 +27,12 @@ class ClusterHandler
 			'_Cluster' => 'AutoCluster',
 		];
 		$this->template = 
-			'	select pt.ParseIDVK_ID
-				FROM Tag t 
-				JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
-				WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-				AND t.TagName= "{tag}" ';
+			'	select pt1."ParseIDVK_ID"
+				FROM "Tag" t  
+				JOIN "ParseIDVK-Tag" pt1 ON t."Tag_ID"=pt1."Tag_ID"
+				WHERE 
+				pt1."ParseIDVK_ID"= qp."ParseIDVK_ID"
+				AND t."TagName"= \'{tag}\' ';
 	}
 
 	private function GetClass($elem)
@@ -50,7 +52,7 @@ class ClusterHandler
 			return '_Cluster';
 		}
 
-		throw new Exception("Неизвестный элемент кластера \"{$elem}\".");
+		throw new Exception("Неизвестный элемент выражения \"{$elem}\".");
 	}
 
 	private function AutoBracket(&$str, $bracket)
@@ -61,6 +63,7 @@ class ClusterHandler
 	private function AutoTag(&$str, $tag)
 	{
 		$tag = substr($tag, 2);
+		$tag = str_replace("'", "''", $tag); // Экранирование одинарной кавычки для PostgreSQL
 		$temp = str_replace('{tag}', $tag, $this->template);
 		$str .= $temp. ' ';
 	}
@@ -70,28 +73,28 @@ class ClusterHandler
 		$str .= $this->operations[$operation]. ' ';
 	}
 
-	private function AutoCluster(&$str, $cluster)
+	private function AutoCluster(&$str, $cluster_name)
 	{
-		$cluster = substr($cluster, 2);
+		$cluster_name = substr($cluster_name, 2);
 
-		$query = "	select ClusterText from Cluster
-					where id = {$this->user_id} and ClusterName = \"{$cluster}\" ";
+		$query = "	select \"ClusterText\" from \"Cluster\"
+					where \"id\" = {$this->user_id} and \"ClusterName\" = '{$cluster_name}' ";
 		
 		if($this->dbh == NULL){
 			throw new Exception('Потеряно соединение с базой данных.');
 		}
 
 		$cluster_query = $this->dbh->query($query)->fetchAll()[0][0];
-
+		
 		if($cluster_query == false){
-			throw new Exception("Не найден кластер {$cluster}, user id = {$this->user_id}.");
+			throw new Exception("Не найден кластер {$cluster_name}, user id = {$this->user_id}.");
 		}
 
 		$str .= ' ( '. $cluster_query. ' ) ';
 	}
 
 	public function GetQuery($cluster)
-	{//Возвращает текст запроса для выражения кластер
+	{//Возвращает текст запроса для выражения $cluster
 		$elems = explode(';', $cluster);
 		$query = '';
 
