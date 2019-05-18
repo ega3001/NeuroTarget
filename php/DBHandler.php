@@ -277,7 +277,7 @@ class DBHandler{
 	    }
 
 	    $result = [];
-	    foreach ($run->fetchAll() as $row) {
+	    foreach ($run->fetchAll(PDO::FETCH_ASSOC) as $row) {
 	        if(json_encode($row) == false){
 	        	throw new Exception(
 	        		'Некорректный тег в базе (скорее всего). '. 
@@ -304,7 +304,7 @@ class DBHandler{
 	    }
 
 	    $result = [];
-	    foreach ($run->fetchAll() as $row) {
+	    foreach ($run->fetchAll(PDO::FETCH_ASSOC) as $row) {
 	        if(json_encode($row) == false){
 	        	throw new Exception(
 	        		'Некорректный кластер в базе (скорее всего). '. 
@@ -347,7 +347,7 @@ class DBHandler{
 	    }
 
 		$result = [];
-	    foreach ($run->fetchAll() as $row) {
+	    foreach ($run->fetchAll(PDO::FETCH_ASSOC) as $row) {
 	        if(json_encode($row) == false){
 	        	throw new Exception(
 	        		'Некорректный тег в базе (скорее всего).'. 
@@ -388,7 +388,7 @@ class DBHandler{
 	    }
 
 		$result = [];
-	    foreach ($run->fetchAll() as $row) {
+	    foreach ($run->fetchAll(PDO::FETCH_ASSOC) as $row) {
 	        if(json_encode($row) == false){
 	        	throw new Exception(
 	        		'Некорректный тег в базе (скорее всего).'. 
@@ -429,7 +429,7 @@ class DBHandler{
 		}
 
 		$result = [];
-		foreach ($run->fetchAll() as $row) {
+		foreach ($run->fetchAll(PDO::FETCH_ASSOC) as $row) {
 	        if(json_encode($row) == false){
 	        	throw new Exception('Ошибка при расшифровке объекта.');
 	        }
@@ -439,59 +439,38 @@ class DBHandler{
 		return json_encode($result);
 	}
 	//--------------------//
-	public function SaveUsersFromQuery($query_id, $tag)
+	public function SaveUsersFromQuery($query_id, $cluster)
 	{
-		/**
-		 * Не использовать!
-		 * Логику работы с этой функцией необходимо поменять
-		 */
-		return 'useless function SaveUsersFromQuery';
+		$query =
+			'	select distinct p."TextID"
+				FROM "Query" q  
+				JOIN "Query-ParseIDVK" qp ON q."Query_ID"=qp."Query_ID" 
+				JOIN "ParseIDVK" p ON qp."ParseIDVK_ID"=p."ParseIDVK_ID" 
+				WHERE q."Query_ID"= '. $query_id;
 
-		$tags = json_decode($tag);
-		if (gettype($tags)!=='array') {
-		    $tags=[];
-		}
+		if( $cluster != '' ){
+			$query .= ' AND EXISTS ( ';
 
-		$query="SELECT p.TextID, p.AvatarURL";
-
-		for ($i=0; $i < count($tags); $i++) { 
-		    $query=$query.",(SELECT pt.Value FROM Tag t 
-		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
-		    WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-		    AND t.TagName=\"".$tags[$i]."\") 
-		    AS \"".$tags[$i]."\"";
-		}
-		$query=$query." FROM Query q 
-		                JOIN `Query-ParseIDVK` qp ON q.Query_ID=qp.Query_ID 
-		                JOIN ParseIDVK p ON qp.ParseIDVK_ID=p.ParseIDVK_ID 
-		                WHERE q.Query_ID=".$query_id;
-		for ($i=0; $i < count($tags); $i++) {
-		    $query=$query." AND EXISTS (SELECT pt.Value 
-		    FROM Tag t 
-		    JOIN `ParseIDVK-Tag` pt ON t.Tag_ID=pt.Tag_ID 
-		    WHERE pt.ParseIDVK_ID=p.ParseIDVK_ID 
-		    AND t.TagName=\"".$tags[$i]."\") ";
-		}
-		$query=$query." GROUP BY TextID ";
-		if(count($tags)>0){
-		    $query=$query."ORDER BY ";
-		}
-		for ($i=0; $i < count($tags); $i++){
-			$query=$query.$tags[$i];
-			if($i!=count($tags)-1){
-			    $query=$query.',';
-			}
+			$user_id = $this->GetUserIdByQueryId($query_id);
+			$clh = new ClusterHandler($this->dbh, $user_id);
+			$cluster_query = $clh->GetQuery($cluster);
+			
+			$query .= $cluster_query. ' )';
 		}
 
-		if(count($tags)>0){
-		    $query=$query." DESC ";
+		$run = $this->dbh->prepare($query);
+
+		if( !$run->execute() ){
+			throw new Exception('Ошибка при выполнении запроса.'. $query);
 		}
+
 
 		$ids = "";
-		foreach ($this->dbh->query($query) as $row) {
-		    $ids .= $row[0]."\r"."\n";
-		}
+		foreach ($run->fetchAll(PDO::FETCH_ASSOC) as $row) {
+	        $ids .= $row['TextID']. "\r\n";
+	    }
 
+		$ids = mb_substr($ids, 0, -1);
 		header("Pragma: public");
 		header("Content-Type: text/plain; charset=utf-8");
 		header("Content-Disposition: attachment; charset=utf-8; filename=\"file.txt\"");
