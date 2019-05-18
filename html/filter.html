@@ -5,15 +5,30 @@
     <meta name="viewport"
           content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <link rel="stylesheet" href="../css/jquery.range.css">
+    <!-- <link rel="stylesheet" href="../css/jquery.range.css">
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
           integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
-    <link rel="stylesheet" href="../css/filter.css">
+    <link rel="stylesheet" href="../css/filter-2.css">
     <link rel="stylesheet" href="../css/load-wheel.css">
     <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
           integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script> -->
+    <link rel="stylesheet" href="../css/jquery.range.css">
+    <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css"
+        integrity="sha384-MCw98/SFnGE8fJT3GXwEOngsV7Zt27NXFoaoApmYm81iuXoPkFOJwJ8ERdknLPMO" crossorigin="anonymous">
+    <link rel="stylesheet" href="../css/filter.css">
+    <link rel="stylesheet" href="../css/load-wheel.css">
+    <link href="https://fonts.googleapis.com/css?family=Montserrat" rel="stylesheet">
+    <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.5.0/css/all.css"
+        integrity="sha384-B4dIYHKNBt8Bc12p+WXckhzcICo0wtJAoU8YZTY5qE0Id1GSseTk6S+L3BlXeVIU" crossorigin="anonymous">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
     <title>NeuroTarget - Main Page</title>
 </head>
 <body>
@@ -25,6 +40,9 @@
             </div>
             <h2>NeuroTarget</h2>
         </div>
+        <button class="clusters" onclick="location.href = '/create_cluster'">
+            Создать кластер
+        </button>
         <div class="cabinet">
             <div class="dropdown">
                 <button class="dropdown-toggle" type="button" id="dropdownMenuButton" data-toggle="dropdown"
@@ -59,35 +77,40 @@
                     <div class="controls">
                         <div class="project">
                             <div class="flex" id="title">
-                                <!-- <h2>first</h2> -->
-                                <!-- <div class="prj-buttons">
-                                    <i class="fas fa-pencil-alt"></i>
-                                    <i class="fas fa-times"></i>
-                                </div> -->
                             </div>
-                            <!-- <p class="status"><span class="badge badge-secondary">Состояние: <span
-                                    class="">в процессе</span></span></p> -->
                             <div class="login-input-wrapper">
                                 <label>
-                                    <select class="js-example-basic-multiple" name="states[]" multiple="multiple" id="select2">
-                                      <!--   <option value="AL">example</option> -->
-                                    </select>
+                                    <div id="app">
+                                        <div class="tags">
+                                            <div class="tag" v-for="item in items" v-bind:id="item.id"
+                                                v-bind:class="{operator: item.type == 'operator', cluster: item.type == 'cluster'}"
+                                                @click="selectTag">
+                                                {{item.text}} <div class="my-close" v-bind:id="item.id" @click="deleteTag"></div>
+                                            </div>
+                                        </div>
+                                        <Select2 :options="options" v-model="selected">
+                                            <option disabled value="0">Select one</option>
+                                        </Select2>
+                                        <button class="btn btn-primary" @click="addTag" v-if="!toChange">Добавить</button>
+                                        <button class="btn btn-primary" @click="changeTag" v-else>Изменить</button>
+                                        <div v-if="!toChange">
+                                            <button class="btn btn-primary" @click="addOperator">+</button>
+                                            <button class="btn btn-primary" @click="addOperator">*</button>
+                                            <button class="btn btn-primary" @click="addOperator">-</button>
+                                            <button class="btn btn-primary" @click="addOperator">(</button>
+                                            <button class="btn btn-primary"@click="addOperator">)</button>
+                                        </div>
+                                        <div v-else>
+                                            <button class="btn btn-primary" @click="changeToOperator">+</button>
+                                            <button class="btn btn-primary" @click="changeToOperator">*</button>
+                                            <button class="btn btn-primary" @click="changeToOperator">-</button>
+                                            <button class="btn btn-primary" @click="changeToOperator">(</button>
+                                            <button class="btn btn-primary" @click="changeToOperator">)</button>
+                                        </div>
+                                        <button class="btn btn-primary" @click="createString">Искать</button>
+                                    </div>
                                 </label>
                             </div>
-                        </div>
-                        <div class="filters">
-                            <div class="ranger">
-                                <p>охват</p>
-                                <div class="ranger-margin">
-                                    <input type="hidden" id="range1" value="20"/>
-                                </div>
-                                <p>точность</p>
-                            </div>
-                            <!-- <div class="padding-15">
-                                <button type="button" class="btn btn-primary" data-toggle="modal"
-                                        data-target="#exampleModal">Расширенные настройки
-                                </button>
-                            </div> -->
                         </div>
                     </div>
                 </div>
@@ -97,9 +120,11 @@
             <div class="standard-margin-vert">
                 <div class="standard-background">
                     <div class="download-wrapper">
-                        <!-- <button type="button" class="btn btn-primary" id="save">Скачать IDs</button> -->
+                        <button type="button" class="btn btn-primary" id='view-tags'>
+                            Посмотреть все тэги/кластеры
+                        </button>
                         <button type="button" class="btn btn-primary" data-toggle="modal"
-                                data-target="#confirmModal" id="download">Скачать IDs
+                                data-target="#confirmModal" id="download">Скачать IDs (txt)
                         </button>
                     </div>
                 </div>
@@ -109,30 +134,27 @@
             <div class="standard-margin-vert">
                 <div class="standard-background">
                     <!-- // 11.03 HEAD -->
-                    <div class="flex content-info" style="flex-direction: column;">
-                        <div style="display: flex; padding: 2.5px;">
-                            <div>Аудитория:</div>
-                            <div id="users-stat" style="margin-left: 10px"></div>
-                            <!-- Место для вставки количества человек -->
+                    <div style="display: flex; padding: 2.5px;">
+                        <div>Аудитория:</div>
+                        <div id="users-stat" style="margin-left: 10px"></div>
+                        <!-- Место для вставки количества человек -->
+                    </div>
+                    <div class="flex content-info flex-dir-col">
+                        <button type="button" class="btn btn-primary" id="load-stata">Открыть статистику
+                        </button>
+                        <div class="table-tags"> 
+                            <table class="table table-bordered table-hover table-sm">
+                                <thead>
+                                    <tr>
+                                        <th>Теги</th>
+                                        <th>Количество ID</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <!-- Место для рамещения тегов -->
+                                </tbody>
+                            </table>
                         </div>
-
-                        <!-- <div class="table-tags"> --> 
-                            <!-- <table class="table table-bordered table-hover table-sm"> -->
-                                <!-- <thead> -->
-                                    <!-- <tr> -->
-                                        <!-- <th>Теги</th> -->
-                                        <!-- <th>Количество ID</th> -->
-                                    <!-- </tr> -->
-                                <!-- </thead> -->
-                                <!-- <tbody> -->
-                                    <!--Место для рамещения тегов-->
-                                    <!-- <tr class="">
-                                        <td>example</td>
-                                        <td>0</td>
-                                    </tr> -->
-                                <!-- </tbody> -->
-                            <!-- </table> -->
-                        <!-- </div> -->
                         <div class="photos" id="photos" style="display: flex; width: 100%">
                             <div id="gallery">
                                 <!-- Место для фотографий -->
@@ -140,28 +162,6 @@
                         </div>
                     </div>
                 </div>
-            </div>
-        </div>
-    </div>
-</div>
-
-<!-- Modal -->
-<div class="modal fade" id="exampleModal" tabindex="-1" role="dialog" aria-labelledby="exampleModalLabel"
-     aria-hidden="true">
-    <div class="modal-dialog" role="document">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Tags</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                </button>
-            </div>
-            <div class="modal-body" id="modal-tags">
-                <!-- Место для модльаных тегов -->
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-                <button type="button" class="btn btn-primary btn-primary-fix">Save changes</button>
             </div>
         </div>
     </div>
@@ -189,93 +189,105 @@
     </div>
 </div>
 
-<script
-        src="http://code.jquery.com/jquery-3.3.1.min.js"
-        integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8="
-        crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
         integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49"
-        crossorigin="anonymous"></script>
-<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
-        integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy"
         crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
 <script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
 <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
 <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
 
-<!-- <script type="text/babel">
-    class Image extends React.Component {
-        render() {
-            return (
-                <div className="photo">
-                    <img src={this.props.imageSrc}/>
-                </div>
-            );
-        }
-    }
-
-    class ImagesWrapper extends React.Component {
-        constructor() {
-            super();
-            this.store = {
-                images: [
-                    "https://pp.userapi.com/c846323/v846323569/10921a/MmSHdBBb5Mo.jpg?ava=1",
-                    "https://sun3-2.userapi.com/c831308/v831308262/17f9e2/8PjB5AFtvgA.jpg?ava=1",
-                    "https://pp.userapi.com/c639622/v639622910/1c89b/J4YKE_fTQmI.jpg?ava=1"
-                ]
-            };
-        }
-
-        render() {
-            return (
-                <div className="gallery">
-                    {this.store.images.map(item => {
-                        return (
-                            <Image imageSrc={item}/>
-                        );
-                    })}
-                </div>
-            );
-        }
-    }
-
-    ReactDOM.render(
-        <ImagesWrapper/>,
-        document.getElementById('photos')
-    );
-</script> -->
-<!-- <div class="loader">
-    <div class="spinner">
-        <svg viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
-            <circle class="length" fill="none" stroke-width="8" stroke-linecap="round" cx="33" cy="33" r="28"></circle>
-        </svg>
-        <svg viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
-            <circle fill="none" stroke-width="8" stroke-linecap="round" cx="33" cy="33" r="28"></circle>
-        </svg>
-        <svg viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
-            <circle fill="none" stroke-width="8" stroke-linecap="round" cx="33" cy="33" r="28"></circle>
-        </svg>
-        <svg viewBox="0 0 66 66" xmlns="http://www.w3.org/2000/svg">
-            <circle fill="none" stroke-width="8" stroke-linecap="round" cx="33" cy="33" r="28"></circle>
-        </svg>
-    </div>
-</div> -->
-
 <!-- Колесо заргузки -->
 <div class="loader-wrapper">
     <div class="loader"></div>
 </div>
 
-<script>
-    $(document).ready(function() {
-        $('.js-example-basic-multiple').select2();
-    });
+<script src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
+    integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous">
 </script>
+<script src="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js"
+    integrity="sha384-ChfqqxuZUCnJSK3+MXmPNIyE6ZbWh2IMqE241rYiqJxyMiZ6OW/JmZQ5stwEULTy" crossorigin="anonymous">
+</script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.6-rc.0/js/select2.min.js"></script>
+<script crossorigin src="https://unpkg.com/react@16/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
+<script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
+
+<style scoped>
+#app {
+    text-align: center;
+}
+
+.tag {
+    background: #3273dc;
+    display: inline-block;
+    border-radius: 3px;
+    margin: 3px 5px;
+    color: #fff;
+    padding: 2px 4px;
+    cursor: pointer;
+    -webkit-touch-callout: none;
+    /* iOS Safari */
+    -webkit-user-select: none;
+    /* Safari */
+    -khtml-user-select: none;
+    /* Konqueror HTML */
+    -moz-user-select: none;
+    /* Firefox */
+    -ms-user-select: none;
+    /* Internet Explorer/Edge */
+    user-select: none;
+    /* Non-prefixed version, currently
+                            supported by Chrome and Opera */
+}
+
+.tags {
+    background: #fff;
+    box-shadow: 0 0 10px 1px rgba(0, 0, 0, 0.2);
+    border-radius: 5px;
+    padding: 5px;
+    margin: 0 auto;
+    min-height: 50px;
+}
+
+.operator {
+    background: #ff3860;
+}
+
+.cluster {
+    background: #ffdd57;
+}
+
+.selected {
+    border: 1px solid #000;
+}
+
+.my-close {
+    background: #fff;
+    color: #000;
+    border-radius: 100%;
+    padding: 0px 0px;
+    display: inline-block;
+    width: 15px;
+    height: 15px;
+    vertical-align: middle;
+    position: relative;
+}
+
+.my-close::after {
+    content: "x";
+    color: #000;
+    position: absolute;
+    top: -4px;
+    left: 4px;
+}
+</style>
 <script src="../js/jquery.range.js"></script>
 <script src="../js/index.js"></script>
 
 <script src="../js/action_menu.js"></script>
 <script src="../js/filter.js"></script>
+<script src="../js/vue-filter.js"></script>
 </body>
 </html>

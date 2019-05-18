@@ -2,18 +2,14 @@
 
 require_once 'php/klein_vendor/autoload.php';
 require 'php/DBHandler.php';
+require 'php/auth.php';
 
 require_once __DIR__ . '/vendor/autoload.php';
 
 require_once 'constants.php';
 
 
-
-$host = "localhost"; //"78.29.9.129";
-$login = "root";
-$password = "qLgxNxavx9wuCru"; //"qLgxNxavx9wuCru"
-$database = "DB";
-$dbhandler = new DBHandler($host, $login, $password, $database);
+$dbhandler = new DBHandler("pgsql", $database, $host, $port, $login, $password);
 
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
@@ -22,6 +18,14 @@ $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
 $channel = $connection->channel();
 
 $klein = new Klein\Klein();
+
+function ExceptionString($e)
+{
+    return [
+        'message' => $e->getMessage(),
+        'info'    => 'Файл: '. $e->getFile(). "\nСтрока:". $e->getLine()
+    ];
+}
 
 $klein->respond('POST', '/get_options', function(){
     $data = $_POST['data'];
@@ -102,6 +106,22 @@ $klein->respond('GET', '/filter', function () use ($dbhandler){
     }
 });
 
+$klein->respond('GET', '/create_cluster', function () use ($dbhandler){
+    if(!$dbhandler->IsLoggedIn()){
+        echo $dbhandler->RedirectTo('login');
+    } else {
+        require 'html/clusters.html';
+    }
+});
+
+$klein->respond('GET', '/view_tags', function () use ($dbhandler){
+    if($dbhandler->IsLoggedIn()){
+        require 'html/view_tags.php';
+    } else {
+        echo $dbhandler->RedirectTo('login');
+    }
+});
+
 $klein->respond('GET', '/register', function () use ($dbhandler){
     if($dbhandler->IsLoggedIn()){
         echo $dbhandler->RedirectTo('load');
@@ -127,26 +147,73 @@ $klein->respond('POST','/get_queries',function() use ($dbhandler){
     echo $dbhandler->GetQueries();
 });
 
-$klein->respond('POST','/get_tags_from_query',function() use ($dbhandler){  
-    $per = floatval($_POST['per'])/100.0;
-    $comp = $_POST['comp'] ? '<' : '>=';
-
-    echo $dbhandler->GetTagsFromQuery($_POST['id'], $_POST['tags'], $per, $_POST['pers'], $comp);
+$klein->respond('POST','/get_tags_from_query', function() use ($dbhandler){
+    $result = [];
+    try {
+        $result = $dbhandler->GetTagsFromQuery($_POST['query_id'], $_POST['cluster']);
+    } catch(Exception $e) {
+        return json_encode(ExceptionString($e));
+    }
+    return json_encode($result);
 });
 
-$klein->respond('GET','/get_users_from_query',function() use ($dbhandler){
-    $per = floatval($_GET['per'])/100.0;
-    $comp = $_GET['comp'] ? '<' : '>=';
+$klein->respond('POST','/get_tags_stat_from_query', function() use ($dbhandler){
+    $result = [];
+    try {
+        $result = $dbhandler->GetTagsStatFromQuery($_POST['query_id'], $_POST['cluster']);
+    } catch(Exception $e) {
+        return json_encode(ExceptionString($e));
+    }
+    return json_encode($result);
+});
 
-    echo $dbhandler->GetUsersFromQuery($_GET['query'], $_GET['tags'], $per, $_GET['pers'], $comp);
+$klein->respond('POST','/save_cluster', function() use ($dbhandler){
+    $result = false;
+    try {
+        $result = $dbhandler->SaveCluster($_POST['cluster_name'], $_POST['cluster']);
+    } catch(Exception $e) {
+        return json_encode(ExceptionString($e));
+    }
+    return $result;
+});
+
+$klein->respond('POST','/get_clusters', function() use ($dbhandler){
+    try {
+        $result = $dbhandler->GetClusters();
+    } catch(Exception $e) {
+        return json_encode(ExceptionString($e));
+    }
+    return json_encode($result);
+});
+
+$klein->respond('POST','/get_tags', function() use ($dbhandler){
+    $result = [];
+    try {
+        $result = $dbhandler->GetTags();
+    } catch(Exception $e) {
+        return json_encode(ExceptionString($e));
+    }
+    return json_encode($result);
+});
+
+$klein->respond('POST','/get_users_from_query', function() use ($dbhandler){
+    $result = [];
+    try {
+        $result = $dbhandler->GetUsersFromQuery($_POST['query_id'], $_POST['cluster']);
+    } catch(Exception $e) {
+        return json_encode(ExceptionString($e));
+    }
+    return json_encode($result);
 });
 
 $klein->respond('GET','/save_users_from_query',function() use ($dbhandler){
-    $per = str_replace('"', '', $_GET['per']);
-    $per = floatval($per)/100.0;
-    $comp = $_GET['comp'] ? '<' : '>=';
-
-    echo $dbhandler->SaveUsersFromQuery($_GET['query'], $_GET['tags'], $per, $_GET['pers'], $comp);
+    $result = [];
+    try {
+        $result = $dbhandler->SaveUsersFromQuery($_GET['query_id'], $_GET['cluster']);
+    } catch(Exception $e) {
+        return json_encode(ExceptionString($e));
+    }
+    return $result;
 });
 
 /**
@@ -197,20 +264,12 @@ $klein->respond('GET', '/getUserPhotosLinks', function ($params) {
                 $counter++;
             }
             
-
-            // echo $file_way;
-            // echo "--------------------------";
-            // echo $file;
-            // echo "--------------------------";
             // Фильтр строк от ненужных символов
             $batch_ids = array_map(function($elem){
                 return str_replace(array("\r\n", "\r", "\n", "\t"), '', $elem);
                 },$batch_ids
             );
-
-            // var_dump($batch_ids);
-            // echo "------------------------------------";
-
+            
             // Формирование сообщения
             $info = Array("file" => $batch_ids);
             $msg = new AMQPMessage(

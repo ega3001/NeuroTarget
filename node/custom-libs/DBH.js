@@ -5,26 +5,25 @@ module.exports = class DBHandler{
     }
 
     ConnectDB(){
-        let mysql = require('mysql');
-        this.connection = mysql.createConnection({
-            host     : 'localhost',
-            user     : 'root',
-            password : 'qLgxNxavx9wuCru',
-            database : 'DB'
+        let pg = require('pg');
+
+        this.connection = new pg.Client({
+            user:       'postgres',
+            host:       'localhost',
+            database:   'DB',
+            password:   '',
+            port:       5432,
         });
-        this.connection.connect(err => {
-            if(err) throw err;
-        });
-        this.connection.on('error', () => {
-            this.ConnectDB();
-        });
+        this.connection.connect()
+          .then(() => console.log('connected'))
+          .catch(err => console.error('connection error', err.stack));
     }
 
     AddAvatarUrlsByPersons(persons){
 
         return new Promise((resolve) => {
             persons.forEach((person) => {
-                let query = `UPDATE ParseIDVK SET AvatarURL= '${person['photo_max_orig']}' WHERE TextID= "${person['id']}"`;
+                let query = `UPDATE "ParseIDVK" SET "AvatarURL"= '${person['photo_max_orig']}' WHERE "TextID"= '${person['id']}'`;
 
                 this.connection.query(query, err => {
                     if(err) throw err;
@@ -35,13 +34,13 @@ module.exports = class DBHandler{
     }
 
     GetParseidById(id){
-        let query = `SELECT ParseIDVK_ID FROM ParseIDVK WHERE TextID="${id}"`;
+        let query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID"='${id}'`;
         
         return new Promise(resolve => {
             this.connection.query(query, (err, res) => {
                 if (err) throw err;
                 try{
-                    if(res[0].ParseIDVK_ID == undefined){
+                    if(res['rows'][0].ParseIDVK_ID == undefined){
                         console.log(id);
                     }
                 }
@@ -50,20 +49,24 @@ module.exports = class DBHandler{
                     console.log(id, res);
                     console.log("---------------------------");
                 }
-                resolve(res[0].ParseIDVK_ID);
+                resolve(res['rows'][0].ParseIDVK_ID);
             });
         });
     }
     AddTagAndGetTagid(tag_name){
-        let query_insert = `INSERT IGNORE INTO \`Tag\`(TagName) VALUE ("${tag_name}")`;
-        let query_select = `SELECT Tag_ID FROM \`Tag\` WHERE TagName = "${tag_name}"`;
+        tag_name = tag_name.replace("'", "''"); // Экранирование одинарной кавычки для PostgreSQL
+
+        let query_insert = `INSERT INTO "Tag"("TagName") VALUES ('${tag_name}')`; // Здесь должен быть IGNORE
+            query_insert += `ON CONFLICT DO NOTHING`;
+
+        let query_select = `SELECT "Tag_ID" FROM "Tag" WHERE "TagName" = '${tag_name}'`;
         
         return new Promise(resolve => {
             this.connection.query(query_insert, (err, res) => {
                 if (err) throw err;
                 this.connection.query(query_select, (err, res) => {
                     if (err) throw err;
-                    resolve(res[0].Tag_ID);
+                    resolve(res['rows'][0].Tag_ID);
                 });
             });
         });
@@ -72,8 +75,9 @@ module.exports = class DBHandler{
 
         return new Promise(() => {
             person.keywords.forEach(keywordinfo => {
-                let query = `INSERT IGNORE INTO \`ParseIDVK-Tag\`(ParseIDVK_ID, Tag_ID, Value) VALUES('${person.parse_id}','${keywordinfo.tag_id}','${keywordinfo.score}')`;
-
+                let query = `INSERT INTO "ParseIDVK-Tag"("ParseIDVK_ID", "Tag_ID", "Value") VALUES('${person.parse_id}','${keywordinfo.tag_id}','${keywordinfo.score}')`; // Здесь должен быть IGNORE
+                    query += `ON CONFLICT DO NOTHING`;
+                
                 this.connection.query(query, err => {
                     if (err) throw err;
                 });

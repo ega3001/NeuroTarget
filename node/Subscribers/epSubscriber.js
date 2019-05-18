@@ -98,16 +98,25 @@ module.exports = class epSubscriber {
                     });
 
                     let data = await getData(promises);
-                    let i = 0;
+                    let i = -1;
                     let all_content = [];
                     let send = 'dbQueue';
                     data.map((item)=>{
+                            i++;
                             //console.log("item: ", item);
                             //console.log(decoded_content.response[i].id);
 
                             let words = item && item.keywords ? item.keywords : undefined;
 
                             if(!item || !item.keywords){
+                                return;
+                            }
+
+                            words = words.filter(elem => {
+                                return elem.score > 0.3;
+                            });
+
+                            if(words.length == 0){
                                 return;
                             }
                             
@@ -119,7 +128,6 @@ module.exports = class epSubscriber {
 
                             all_content.push(send_content);
                             // console.log("send_content: ", send_content);
-                            i++;
                             //console.log("send_content: ", send_content);
                     });
 
