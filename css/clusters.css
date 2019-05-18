@@ -1,0 +1,266 @@
+*{
+    margin: 0;
+    padding: 0;
+    outline: none;
+    text-decoration: none;
+    box-sizing: border-box;
+    font-family: 'Montserrat', sans-serif;
+}
+
+html, body{
+    width: 100%;
+    height: 100%;
+}
+
+body{
+    background: #F2F1EF;
+}
+
+nav{
+    height: 60px;
+    background: white;
+    border-bottom: 1px solid #d2d7d3;
+}
+nav .menu{
+    height: 100%;
+    display: flex;
+}
+nav .logo{
+    display: flex;
+    height: 100%;
+    margin-right: auto;
+}
+
+nav .logo h2{
+    font-family: 'Montserrat', sans-serif;
+    margin: auto 20px;
+    font-weight: 200;
+    font-size: 23px;
+}
+
+nav .logo .menu-trigger{
+    width: 60px;
+    height: 100%;
+    background: #379edf;
+    color: white;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 30px;
+    cursor: pointer;
+    transition: 0.2s background;
+}
+
+nav .logo .menu-trigger:hover{
+    background: #38b0f2;
+}
+
+nav .cabinet .dropdown{
+    height: 100%;
+}
+
+nav .cabinet .dropdown button, .clusters{
+    height: 100%;
+    border: none;
+    padding: 0 20px;
+    outline: none;
+    background: #379edf;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s background;
+}
+
+nav .cabinet .dropdown .dropdown-menu{
+    position: absolute;
+    will-change: transform;
+    top: 0;
+    right: 2px;
+    transform: translate3d(0px, 59px, 0px) !important;
+    border-radius: 0;
+    font-size: 14px;
+}
+
+nav .cabinet .dropdown button:hover, .clusters:hover{
+    background: #38b0f2;
+}
+
+.clusters a {
+    color: inherit;
+    text-decoration: none;
+}
+
+#root{
+    width: 100%;
+    height: calc(100% - 60px);
+    overflow-x: hidden;
+}
+
+.sidebar{
+    display: flex;
+    flex-direction: column;
+    max-height: calc(100% - 59px);
+
+    position: fixed;
+    top: 59px;
+    width: 240px;
+    background: #22313f;
+    height: 100%;
+    transition: 0.3s left;
+    z-index: 100;
+}
+
+.works-wrapper {
+    overflow-y: auto;
+}
+
+.sidebar h3{
+    color: white;
+    padding: 20px 20px;
+    font-size: 23px;
+    font-weight: 200;
+    margin: 0;
+}
+
+.padding-container{
+    padding: 0 20px;
+}
+
+.padding-container-full{
+    padding: 20px;
+}
+
+.add-button{
+    font-size: 14px;
+}
+
+.works{
+    list-style-type: none;
+    color: white;
+}
+
+.works li{
+    font-size: 16px;
+    margin: 7px 0;
+    cursor: pointer;
+}
+
+.works li a {
+    color: white;
+    text-decoration: none;
+}
+
+.content{
+    margin-left: 240px;
+    /*border: 1px solid green;*/
+    height: 100%;
+    transition: 0.3s margin-left;
+}
+
+.standard-margin-vert{
+    margin: 10px 0;
+}
+
+.standard-margin-horz{
+    margin: 0 10px;
+}
+
+.standard-background{
+    padding: 10px;
+    background: white;
+    border-bottom: 1px solid #d2d7d3;
+}
+
+.fas.fa-arrow-circle-right {
+    display: none;
+}
+
+.fas.fa-arrow-circle-right.active {
+    display: inline;
+}
+
+.cluster-header {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.cluster-creation-title {
+    margin: 10px;
+    /* display: flex;
+    justify-content: center; */
+}
+
+.cluster-creation-name {
+    /* display: flex;
+    justify-content: center; */
+    margin: 10px;
+    margin-top: 0;
+}
+
+.cluster-creation-name__input {
+    text-align: center;
+}
+
+.cluster-creation-wrapper {
+    padding: 10px;
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.cluster-query {
+    display: flex;
+    flex-wrap: wrap;
+}
+
+.query-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.query-item__title {
+    text-align: center;
+}
+
+/* .query-item__select2_tag {
+    min-width: 150px;
+} */
+
+.cluster-control {
+    margin-left: 20px;
+}
+
+.cluster-control-item {
+    display: flex;
+    align-items: center;
+    margin: 5px 0;
+}
+
+.far.fa-plus-square {
+    display: inline-block;
+    font-size: 35px;
+    color: #379edf;
+    margin-right: 5px;
+}
+
+.cluster-control-item__title {
+    display: inline-block;
+}
+
+.cluster-control-create-btn {
+    border: none;
+    padding: 15px;
+    outline: none;
+    background: #379edf;
+    color: white;
+    cursor: pointer;
+    transition: 0.2s background;
+}
+
+.cluster-control-create-btn:hover {
+    background: #38b0f2;
+}
+
+.fa-plus-square:before {
+    cursor: pointer;
+}

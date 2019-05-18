@@ -36,7 +36,7 @@ class ClusterHandler
 				AND t."TagName"= \'{tag}\' ';
 		$this->grammatic = [
 			'S' 			=> ['_OpenBracket', '_Tag', '_Cluster'],
-			'_Tag'			=> ['_Operation', 'eps'],
+			'_Tag'			=> ['_Operation', '_CloseBracket', 'eps'],
 			'_Cluster'		=> ['_Operation'],
 			'_OpenBracket'	=> ['_Tag', '_Cluster'],
 			'_CloseBracket'	=> ['_Operation', 'eps'],
@@ -51,7 +51,7 @@ class ClusterHandler
 		for ($i = 0; $i < count($elems) - 1; $i++) { 
 			$new_state = $this->GetClass($elems[$i]);
 			if(!in_array($new_state, $this->grammatic[$state]))
-				return false;
+				return $new_state;
 			$state = $new_state;
 		}
 		return true;
@@ -121,6 +121,7 @@ class ClusterHandler
 	{//Возвращает текст запроса для выражения $cluster
 		$elems = explode(';', $cluster);
 		$query = '';
+
 		if(!$this->CheckGramm($elems))
 			throw new Exception("Некорректное выражение кластера ". $cluster);
 

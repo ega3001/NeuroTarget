@@ -244,18 +244,35 @@ class DBHandler{
 	//--------------------//
 	public function SaveCluster($cluster_name, $cluster)
 	{
+		if($cluster == '')
+			throw new Exception("Пустой кластер.");
+		if($cluster_name == '')
+			throw new Exception("Пустое название.");
+		
+		$query =
+			"	select 	\"Cluster_ID\" from \"Cluster\" 
+				where 	\"ClusterName\"='{$cluster_name}'
+				and 	\"id\"='{$this->auth->getUserId()}'";
+
+		$run = $this->dbh->prepare($query);
+
+		if( !$run->execute() ){
+			throw new Exception('Ошибка при выполнении запроса.'. $query);
+		}
+		
+		if(count($run->fetchAll() != 0))
+			throw new Exception("Уже есть кластер с таким названием.");
+			
 		$user_id = $this->auth->getUserId();
 		str_replace("'", "''", $cluster_name); //Экранирование одинарных кавычек
 		$query =
 			"	insert INTO \"Cluster\"(\"id\", \"ClusterName\", \"ClusterText\") VALUES ({$user_id}, '{$cluster_name}', ";
 
-		if( $cluster != '' ){
-			$clh = new ClusterHandler($this->dbh, $user_id);
-			$cluster_query = $clh->GetQuery($cluster);
-			
-			$cluster_query = str_replace("'", "''", $cluster_query); // Экранирование одинарной кавычки для PostgreSQL
-			$query .= ' \''. $cluster_query. '\') ';
-		}
+		$clh = new ClusterHandler($this->dbh, $user_id);
+		$cluster_query = $clh->GetQuery($cluster);
+		
+		$cluster_query = str_replace("'", "''", $cluster_query); // Экранирование одинарной кавычки для PostgreSQL
+		$query .= ' \''. $cluster_query. '\') ';
 
 		$run = $this->dbh->prepare($query);
 
@@ -289,7 +306,7 @@ class DBHandler{
 	        $result[count($result)] = $row;
 	    }
 
-	    echo json_encode($result);
+	    return $result;
 	}
 	//--------------------//
 	public function GetClusters()
@@ -316,7 +333,7 @@ class DBHandler{
 	        $result[count($result)] = $row;
 	    }
 
-	    echo json_encode($result);
+	    return $result;
 	}
 	//--------------------//
 	public function GetTagsStatFromQuery($query_id, $cluster)
@@ -357,7 +374,7 @@ class DBHandler{
 	        $result[count($result)] = $row;
 	    }
 
-	    return json_encode($result);
+	    return $result;
 	}
 	//--------------------//
 	public function GetTagsFromQuery($query_id, $cluster)
@@ -398,7 +415,7 @@ class DBHandler{
 	        $result[count($result)] = $row;
 	    }
 
-	    return json_encode($result);
+	    return $result;
 	}
 	//--------------------//
 	public function GetUsersFromQuery($query_id, $cluster)
@@ -436,7 +453,7 @@ class DBHandler{
 	        $result[count($result)] = $row;
 	    }
 
-		return json_encode($result);
+		return $result;
 	}
 	//--------------------//
 	public function SaveUsersFromQuery($query_id, $cluster)

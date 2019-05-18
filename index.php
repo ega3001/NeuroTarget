@@ -21,7 +21,10 @@ $klein = new Klein\Klein();
 
 function ExceptionString($e)
 {
-    return "\n". $e->getMessage(). "\nФайл: ". $e->getFile(). "\nСтрока: ". $e->getLine();
+    return [
+        'message' => $e->getMessage(),
+        'info'    => 'Файл: '. $e->getFile(). "\nСтрока:". $e->getLine()
+    ];
 }
 
 $klein->respond('POST', '/get_options', function(){
@@ -149,9 +152,9 @@ $klein->respond('POST','/get_tags_from_query', function() use ($dbhandler){
     try {
         $result = $dbhandler->GetTagsFromQuery($_POST['query_id'], $_POST['cluster']);
     } catch(Exception $e) {
-        echo ExceptionString($e);
+        return json_encode(ExceptionString($e));
     }
-    echo $result;
+    return json_encode($result);
 });
 
 $klein->respond('POST','/get_tags_stat_from_query', function() use ($dbhandler){
@@ -159,9 +162,9 @@ $klein->respond('POST','/get_tags_stat_from_query', function() use ($dbhandler){
     try {
         $result = $dbhandler->GetTagsStatFromQuery($_POST['query_id'], $_POST['cluster']);
     } catch(Exception $e) {
-        echo ExceptionString($e);
+        return json_encode(ExceptionString($e));
     }
-    echo $result;
+    return json_encode($result);
 });
 
 $klein->respond('POST','/save_cluster', function() use ($dbhandler){
@@ -169,18 +172,18 @@ $klein->respond('POST','/save_cluster', function() use ($dbhandler){
     try {
         $result = $dbhandler->SaveCluster($_POST['cluster_name'], $_POST['cluster']);
     } catch(Exception $e) {
-        echo ExceptionString($e);
+        return json_encode(ExceptionString($e));
     }
-    echo $result;
+    return $result;
 });
 
 $klein->respond('POST','/get_clusters', function() use ($dbhandler){
     try {
         $result = $dbhandler->GetClusters();
     } catch(Exception $e) {
-        echo ExceptionString($e);
+        return json_encode(ExceptionString($e));
     }
-    echo $result;
+    return json_encode($result);
 });
 
 $klein->respond('POST','/get_tags', function() use ($dbhandler){
@@ -188,9 +191,9 @@ $klein->respond('POST','/get_tags', function() use ($dbhandler){
     try {
         $result = $dbhandler->GetTags();
     } catch(Exception $e) {
-        echo ExceptionString($e);
+        return json_encode(ExceptionString($e));
     }
-    echo $result;
+    return json_encode($result);
 });
 
 $klein->respond('POST','/get_users_from_query', function() use ($dbhandler){
@@ -198,13 +201,19 @@ $klein->respond('POST','/get_users_from_query', function() use ($dbhandler){
     try {
         $result = $dbhandler->GetUsersFromQuery($_POST['query_id'], $_POST['cluster']);
     } catch(Exception $e) {
-        echo ExceptionString($e);
+        return json_encode(ExceptionString($e));
     }
-    echo $result;
+    return json_encode($result);
 });
 
 $klein->respond('GET','/save_users_from_query',function() use ($dbhandler){
-    echo $dbhandler->SaveUsersFromQuery($_GET['query'], $_GET['tags']);
+    $result = [];
+    try {
+        $result = $dbhandler->SaveUsersFromQuery($_GET['query_id'], $_GET['cluster']);
+    } catch(Exception $e) {
+        return json_encode(ExceptionString($e));
+    }
+    return $result;
 });
 
 /**
