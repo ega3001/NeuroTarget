@@ -16,15 +16,16 @@ class ClusterHandler
 		$this->user_id = $user_id;
 		$this->dbh = $dbh;
 		$this->operations = [
-			'AND' => ' INTERSECT ',
-			'OR'  => ' UNION ',
+			'AND' 	=> ' INTERSECT ',
+			'OR'  	=> ' UNION ',
 			'DIFF'  => ' EXCEPT ',
 		];
 		$this->set = [
-			'_Operation' => 'AutoOperation',
-			'_Tag' => 'AutoTag',
-			'_Bracket' => 'AutoBracket',
-			'_Cluster' => 'AutoCluster',
+			'_Operation' 	=> 'AutoOperation',
+			'_Tag' 			=> 'AutoTag',
+			'_OpenBracket' 	=> 'AutoBracket',
+			'_CloseBracket' => 'AutoBracket',
+			'_Cluster' 		=> 'AutoCluster',
 		];
 		$this->template = 
 			'	select pt1."ParseIDVK_ID"
@@ -33,6 +34,27 @@ class ClusterHandler
 				WHERE 
 				pt1."ParseIDVK_ID"= qp."ParseIDVK_ID"
 				AND t."TagName"= \'{tag}\' ';
+		$this->grammatic = [
+			'S' 			=> ['_OpenBracket', '_Tag', '_Cluster'],
+			'_Tag'			=> ['_Operation', 'eps'],
+			'_Cluster'		=> ['_Operation'],
+			'_OpenBracket'	=> ['_Tag', '_Cluster'],
+			'_CloseBracket'	=> ['_Operation', 'eps'],
+			'_Operation'	=> ['_Tag', '_Cluster'],
+		];
+	}
+
+	private function CheckGramm($elems)
+	{//Проверяет выражение кластера на корректность
+		$state = 'S';
+		$elems[] = 'eps';
+		for ($i = 0; $i < count($elems) - 1; $i++) { 
+			$new_state = $this->GetClass($elems[$i]);
+			if(!in_array($new_state, $this->grammatic[$state]))
+				return false;
+			$state = $new_state;
+		}
+		return true;
 	}
 
 	private function GetClass($elem)
@@ -43,8 +65,9 @@ class ClusterHandler
 			case 'DIFF' :
 				return '_Operation';
 			case '('  :
+				return '_CloseBracket';
 			case ')'  :
-				return '_Bracket';
+				return '_OpenBracket';
 		}
 		if(stripos($elem, 't_') === 0){
 			return '_Tag';
@@ -98,6 +121,8 @@ class ClusterHandler
 	{//Возвращает текст запроса для выражения $cluster
 		$elems = explode(';', $cluster);
 		$query = '';
+		if(!$this->CheckGramm($elems))
+			throw new Exception("Некорректное выражение кластера ". $cluster);
 
 		foreach ($elems as $elem) {
 			$class = $this->GetClass($elem);
