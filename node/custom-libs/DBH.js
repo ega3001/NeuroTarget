@@ -11,7 +11,7 @@ module.exports = class DBHandler{
             user:       'postgres',
             host:       'localhost',
             database:   'DB',
-            password:   '',
+            password:   '123',
             port:       5432,
         });
         this.connection.connect()
@@ -55,7 +55,6 @@ module.exports = class DBHandler{
     }
     AddTagAndGetTagid(tag_name){
         tag_name = tag_name.replace("'", "''"); // Экранирование одинарной кавычки для PostgreSQL
-
         let query_insert = `INSERT INTO "Tag"("TagName") VALUES ('${tag_name}')`; // Здесь должен быть IGNORE
             query_insert += `ON CONFLICT DO NOTHING`;
 
