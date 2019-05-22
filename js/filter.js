@@ -63,15 +63,14 @@ function ShowPhotos(tags = "") {
         console.log("Returned users: " + data);
 
         $(".photo").remove();
-        let limit = Math.min(data.length, 80); // 11.03 HEAD
-        for (let i = 0; i < limit; i++) {      // 11.03 HEAD
+        for (let i = 0; i < data['users'].length; i++) {      // 11.03 HEAD
           $(
-            '<div class="photo"><img src="' + data[i]['AvatarURL'] + '"></div>'
+            '<div class="photo"><img src="' + data['users'][i]['AvatarURL'] + '"></div>'
           ).appendTo("#gallery");
         }
 
-        $('<div style="margin-left: 10px">' + data.length + '</div>').appendTo('#users-stat'); // 11.03 HEAD
-        $('#users-stat').text(data.length);  // 11.03 HEAD
+        $('<div style="margin-left: 10px">' + data['total_count'] + '</div>').appendTo('#users-stat'); // 11.03 HEAD
+        $('#users-stat').text(data['total_count']);  // 11.03 HEAD
 
       }else{
         let error = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong>'
