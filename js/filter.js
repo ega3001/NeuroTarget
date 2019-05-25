@@ -88,8 +88,6 @@ function ShowTable(tags = ""){
   $('#load-stata').hide();
   $('.table-tags').show();
 
-  let selected_tags = $("#select2").val();
-
   $.ajax({
     // url: "http://virtserver.swaggerhub.com/neurotarget/simple/1.0.0/get_tags_stat_from_query",
     url: "/get_tags_stat_from_query",
@@ -141,6 +139,39 @@ function HideTable(){
 $('#load-stata').on('click', ()=>{
   ShowTable(cluster_string);
 });
+
+function SaveCluster(){
+  $.ajax({
+    url: "/save_cluster",
+    method: "POST",
+    async: true,
+    data: {
+        cluster_name: $('#nameCluster').val(),
+        cluster: cluster_string
+    },
+    beforeSend: () => {
+      ShowLoadWheel();
+    },
+    complete: () => {
+      HideLoadWheel();
+    },
+    success: data => {
+      data = JSON.parse(data);
+      console.log("Returned tags: " + data);
+      if (!data.message) {
+        let success = '<div class="alert alert-success alert-dismissible fade show" role="alert">'
+        + '<strong>Кластер успешно создан!</strong>'
+        + '<button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+        $('#app').after(success);
+      }else{
+        let error = '<div class="alert alert-danger alert-dismissible fade show" role="alert"><strong>'
+        + data.message
+        + '</strong><button type="button" class="close" data-dismiss="alert" aria-label="Close"><span aria-hidden="true">&times;</span></button></div>'
+        $('#app').after(error);
+      }
+    }
+  });
+}
 
 $('#view-tags').on('click', ()=>{
   window.open("/view_tags?query=" +

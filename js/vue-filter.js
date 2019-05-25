@@ -29,7 +29,8 @@ const Select2 = {
             $(this.$el)
                 .empty()
                 .select2({
-                    data: options
+                    data: options,
+                    matcher: matchWordFromStart
                 });
         }
     },
@@ -184,6 +185,25 @@ window.vue_obj = new Vue({
             //     }
             // });
         },
+        createCluster: function () {
+            this.string = "";
+            for (var i in this.items) {
+                switch (this.items[i].type) {
+                    case "tag":
+                        this.string += "t_" + this.items[i].text + ";";
+                        break;
+                    case "cluster":
+                        this.string += "c_" + this.items[i].text + ";";
+                        break;
+                    case "operator":
+                        this.string += this.convert(this.items[i].text) + ";";
+                        break;
+                }
+            }
+            this.string = this.string.slice(0, -1);
+            SaveCluster();
+            window.cluster_string = this.string;
+        },
         convert: function (t) {
             switch (t) {
                 case "+":
@@ -267,6 +287,21 @@ window.vue_obj = new Vue({
         Select2
     }
 });
+
+function matchWordFromStart(params, data) {
+    if ($.trim(params.term) === '') {
+      return data;
+    }
+    if (typeof data.text === 'undefined') {
+      return null;
+    }
+    if (data.text.toUpperCase().indexOf(params.term.toUpperCase()) === 0) {
+      var modifiedData = $.extend({}, data, true);
+      return modifiedData;
+    }
+    return null;
+}
+
 $(document).ready(function () {
     $(".js-example-basic-single").select2();
 });

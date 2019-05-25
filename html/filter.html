@@ -107,6 +107,10 @@
                                             <button class="btn btn-primary" @click="changeToOperator">(</button>
                                             <button class="btn btn-primary" @click="changeToOperator">)</button>
                                         </div>
+                                        <div>
+                                        	<input type="text" placeholder="Input title" id="nameCluster">
+                                        </div>
+                                        <button class="btn btn-warning" @click="createCluster">Создать кластер</button>
                                         <button class="btn btn-primary" @click="createString">Искать</button>
                                     </div>
                                 </label>
@@ -218,7 +222,11 @@
 #app {
     text-align: center;
 }
-
+#app div input[type="text"]{
+	width: 30%;
+	min-width: 200px;
+	text-align: center;
+}
 .tag {
     background: #3273dc;
     display: inline-block;

@@ -10,13 +10,16 @@ class ClusterHandler
 	private $template;
 	private $operations;
 	private $set;
-	private static $grammatic = [
-			'S' 			=> ['_OpenBracket', '_Tag', '_Cluster'],
-			'_Tag'			=> ['_Operation', '_CloseBracket', 'eps'],
-			'_Cluster'		=> ['_Operation', '_CloseBracket', 'eps'],
-			'_OpenBracket'	=> ['_Tag', '_Cluster'],
-			'_CloseBracket'	=> ['_Operation', 'eps'],
-			'_Operation'	=> ['_OpenBracket', '_Tag', '_Cluster'],
+	private static $gramm = [
+			'S' => [ 
+				'_Tag' => ['_Tag', 'T'],  
+				'_Cluster' => ['_Cluster', 'T'],  
+				'_OpenBracket' => ['_OpenBracket', 'S', '_CloseBracket', 'T']
+			],
+			'T' => [
+				'_Operation' => ['_Operation', 'S'],
+				'eps'
+			]
 		];
 	public function __construct(&$dbh, $user_id, $template = '')
 	{
@@ -39,16 +42,49 @@ class ClusterHandler
 
 	public static function IsCorrect($cluster)
 	{//Проверяет выражение кластера на корректность
+		$Type = function($word)
+		{
+			return 	stripos($word, '_') === 0 ?
+			'lexem' : 'state';
+		};
+		$FIRST = [
+			'S' => ['_Tag', '_Cluster', '_OpenBracket'],
+			'T' => ['_Operation', 'eps']
+		];
+		$FOLLOW = [
+			'S' => ['_CloseBracket'],
+			'T' => ['_CloseBracket']
+		];
+
 		$elems = explode(';', $cluster);
-		$state = 'S';
-		for ($i = 0; $i < count($elems); $i++) { 
-			$new_state = self::GetClass($elems[$i]);
-			if(!in_array($new_state, self::$grammatic[$state])){
-				return false;
+		$stack = ['S'];
+		foreach ($elems as $elem) {
+			
+			$lex_type = self::GetClass($elem);
+			while ($Type(end($stack)) == 'state') {
+				$state = array_pop($stack);
+
+				if(in_array($lex_type, $FIRST[$state])){ 
+					$stack = array_merge(
+						$stack, 
+						array_reverse(self::$gramm[$state][$lex_type])
+					);
+				}
+				elseif(!in_array($lex_type, $FOLLOW[$state])) {
+					return false;
+				}
+
+				if(count($stack) === 0){
+					return false;
+				}
 			}
-			$state = $new_state;
+
+			array_pop($stack);
 		}
-		return in_array('eps', self::$grammatic[$state]);
+		if(!in_array('eps', self::$gramm[array_pop($stack)])){
+			return false;
+		}
+		return count($stack) === 0;
 	}
 
 	private static function GetClass($elem)

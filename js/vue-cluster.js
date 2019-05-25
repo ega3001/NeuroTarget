@@ -28,7 +28,8 @@ const Select2 = {
             $(this.$el)
                 .empty()
                 .select2({
-                    data: options
+                    data: options,
+                    matcher: matchWordFromStart
                 });
         }
     },
@@ -266,6 +267,21 @@ new Vue({
         Select2
     }
 });
+
+function matchWordFromStart(params, data) {
+    if ($.trim(params.term) === '') {
+      return data;
+    }
+    if (typeof data.text === 'undefined') {
+      return null;
+    }
+    if (data.text.toUpperCase().indexOf(params.term.toUpperCase()) === 0) {
+      var modifiedData = $.extend({}, data, true);
+      return modifiedData;
+    }
+    return null;
+}
+
 $(document).ready(function () {
     $(".js-example-basic-single").select2();
 });
