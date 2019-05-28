@@ -67,7 +67,7 @@ class DBHandler{
 		}
 
 		$ids = file($_FILES['file']['tmp_name']);
-		$reg = '/^(([0-9]{2}[a-zA-Z]|[0-9][a-zA-Z]\w|[a-zA-Z]\w{2})\w{2,29}|[0-9]{4,32})(\r\n|\z)/';
+		$reg = '/^\d+(\r\n|\z)/';
 		$sz = count($ids);
 		for ($i = 0; $i < $sz; $i++) {
 		    if(!preg_match($reg, $ids[$i])){

@@ -11,7 +11,7 @@ module.exports = class DBHandler{
             user:       'postgres',
             host:       'localhost',
             database:   'DB',
-            password:   '123',
+            password:   '',
             port:       5432,
         });
         this.connection.connect()
@@ -34,19 +34,20 @@ module.exports = class DBHandler{
     }
 
     GetParseidById(id){
-        let query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID"='${id}'`;
-        
+        let query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID" = '${id}';`;
+
         return new Promise(resolve => {
             this.connection.query(query, (err, res) => {
                 if (err) throw err;
                 try{
-                    if(res['rows'][0].ParseIDVK_ID == undefined){
+                    if(res['rows'][0] == undefined){
                         console.log(id);
                     }
                 }
                 catch(error){
                     console.log("---------------------------");
                     console.log(id, res);
+                    console.log(error);
                     console.log("---------------------------");
                 }
                 resolve(res['rows'][0].ParseIDVK_ID);
@@ -54,6 +55,7 @@ module.exports = class DBHandler{
         });
     }
     AddTagAndGetTagid(tag_name){
+
         tag_name = tag_name.replace("'", "''"); // Экранирование одинарной кавычки для PostgreSQL
         let query_insert = `INSERT INTO "Tag"("TagName") VALUES ('${tag_name}')`; // Здесь должен быть IGNORE
             query_insert += `ON CONFLICT DO NOTHING`;
@@ -72,23 +74,24 @@ module.exports = class DBHandler{
     }
     AddPersonTags(person){
 
-        return new Promise(() => {
+        return new Promise(resolve => {
             person.keywords.forEach(keywordinfo => {
                 let query = `INSERT INTO "ParseIDVK-Tag"("ParseIDVK_ID", "Tag_ID", "Value") VALUES('${person.parse_id}','${keywordinfo.tag_id}','${keywordinfo.score}')`; // Здесь должен быть IGNORE
                     query += `ON CONFLICT DO NOTHING`;
-                
+
                 this.connection.query(query, err => {
                     if (err) throw err;
+                    resolve();
                 });
             });
         });
     }
 
-    TagsHandle(persons) {
+    async TagsHandle(persons) {
 
         let personsPromises = [];
         //Получение tag_id
-        persons.forEach(person => {
+        await persons.forEach(person => {
             person.keywords.forEach(keywordinfo => {
                 let tag_promise = this.AddTagAndGetTagid(keywordinfo.keyword);
                 personsPromises.push(tag_promise);
@@ -97,8 +100,9 @@ module.exports = class DBHandler{
                 });
             });
         });
+        
         //Получение parse_id
-        persons.forEach(person => {
+        await persons.forEach(person => {
             let parseid_promise = this.GetParseidById(person.id);
             personsPromises.push(parseid_promise);
             parseid_promise.then(res => {
@@ -107,7 +111,7 @@ module.exports = class DBHandler{
         });
         //Когда все данные получены:
         let promises = [];
-        Promise.all(personsPromises).then(() => {
+        await Promise.all(personsPromises).then(() => {
             persons.forEach(person => {
                 let promise = this.AddPersonTags(person);
                 promises.push(promise);
@@ -116,10 +120,9 @@ module.exports = class DBHandler{
         return Promise.all(promises);
     }
     async HandlePersons(persons){
-
-        let promiseAll = [];
-        let UrlsPromise = this.AddAvatarUrlsByPersons(persons);
-        let TagsPromise = this.TagsHandle(persons);
+        var promiseAll = [];
+        var UrlsPromise = this.AddAvatarUrlsByPersons(persons);
+        var TagsPromise = this.TagsHandle(persons);
 
         promiseAll.push(UrlsPromise);
         promiseAll.push(TagsPromise);
