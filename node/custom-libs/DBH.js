@@ -27,6 +27,7 @@ module.exports = class DBHandler{
 
                 this.connection.query(query, err => {
                     if(err) throw err;
+         			console.log('PUSH URL');
                     resolve();
                 });
             });
@@ -34,10 +35,10 @@ module.exports = class DBHandler{
     }
 
     GetParseidById(id){
-        let query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID"='${id}'`;
-        
+        var query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID"='${id}'`;
         return new Promise(resolve => {
             this.connection.query(query, (err, res) => {
+                    console.log("q: " + query);
                 if (err) throw err;
                 try{
                     if(res['rows'][0].ParseIDVK_ID == undefined){
@@ -72,42 +73,46 @@ module.exports = class DBHandler{
     }
     AddPersonTags(person){
 
-        return new Promise(() => {
+        return new Promise(resolve => {
             person.keywords.forEach(keywordinfo => {
                 let query = `INSERT INTO "ParseIDVK-Tag"("ParseIDVK_ID", "Tag_ID", "Value") VALUES('${person.parse_id}','${keywordinfo.tag_id}','${keywordinfo.score}')`; // Здесь должен быть IGNORE
                     query += `ON CONFLICT DO NOTHING`;
                 
                 this.connection.query(query, err => {
                     if (err) throw err;
+                    console.log('CONNECT TAG TO PRASEID');
+                    resolve();
                 });
             });
         });
     }
 
-    TagsHandle(persons) {
+    async TagsHandle(persons) {
 
         let personsPromises = [];
         //Получение tag_id
-        persons.forEach(person => {
+        await persons.forEach(person => {
             person.keywords.forEach(keywordinfo => {
                 let tag_promise = this.AddTagAndGetTagid(keywordinfo.keyword);
                 personsPromises.push(tag_promise);
                 tag_promise.then(res => {
+                	console.log('GET TAG');
                     keywordinfo.tag_id = res;
                 });
             });
         });
         //Получение parse_id
-        persons.forEach(person => {
+        await persons.forEach(person => {
             let parseid_promise = this.GetParseidById(person.id);
             personsPromises.push(parseid_promise);
             parseid_promise.then(res => {
+            	console.log('GET PARSEID');
                 person.parse_id = res;
             });
         });
         //Когда все данные получены:
         let promises = [];
-        Promise.all(personsPromises).then(() => {
+        await Promise.all(personsPromises).then(() => {
             persons.forEach(person => {
                 let promise = this.AddPersonTags(person);
                 promises.push(promise);
@@ -116,7 +121,7 @@ module.exports = class DBHandler{
         return Promise.all(promises);
     }
     async HandlePersons(persons){
-
+    	console.log('START');
         let promiseAll = [];
         let UrlsPromise = this.AddAvatarUrlsByPersons(persons);
         let TagsPromise = this.TagsHandle(persons);

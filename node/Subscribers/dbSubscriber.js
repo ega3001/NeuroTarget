@@ -32,7 +32,8 @@ module.exports = class dbSubscriber{
                                 console.log("db : Запись ошибки (БД) НЕ завершена");
                         });
                     }
-                    
+                    console.log('STOP');
+                    // process.exit();
                     console.log("Загружено");
                     ch.ack(msg);
                 }, {noAck: false});
