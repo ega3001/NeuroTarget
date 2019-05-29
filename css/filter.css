@@ -10,6 +10,8 @@
 html, body{
     width: 100%;
     height: 100%;
+    padding: 0;
+    margin: 0;
 }
 
 body{
@@ -440,4 +442,82 @@ nav .cabinet .dropdown button:hover{
 .clusters a {
     color: inherit;
     text-decoration: none;
+}
+
+/*cluster form*/
+#app{
+    text-align: -webkit-center;
+}
+
+#nameCluster{
+    text-align: center;
+}
+
+.elements-list{
+  width: 50%;
+  max-width: 400px;
+  background: radial-gradient(50% 50%,#F2F1EF, white);
+  display: inline-block;
+  margin: 20px;
+  border-radius: 6px;
+  vertical-align: top;
+}
+
+.elements-list .list-group-item{
+  display: inline-block;
+  width: 30px;
+  background: #fff;
+  margin: 5px;
+  text-align: center;
+  border-radius: 10px;
+  padding: 3px
+}
+.elements-list .list-group-item:hover{
+  border: 2px solid #379EDF;
+  padding: 2px;
+}
+
+.elements-list .select2{
+  padding: 0px 5px;
+}
+
+.string-list{
+  background: #F2F1EF;
+  margin: 20px;
+  border-radius: 6px;
+}
+
+.string-list .list-group-item{
+  display: inline-block;
+  margin: 5px;
+  text-align: center;
+  border-radius: 5px;
+  padding: 3px;
+  width: 100px;
+  color: #fff;
+}
+
+.list-group {
+    display: initial !important;
+}
+
+.operator{
+  background: #ff3860;
+}
+
+.cluster{
+  background: #ffdd57;
+}
+.tag{
+  background: #3273dc;
+}
+.converted{
+  margin: 5px;
+  padding: 3px;
+  border-radius: 5px;
+}
+i.close{
+  cursor: pointer;
+  float: right;
+  margin: 0px 5px;
 }

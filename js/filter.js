@@ -140,14 +140,14 @@ $('#load-stata').on('click', ()=>{
   ShowTable(cluster_string);
 });
 
-function SaveCluster(){
+function SaveCluster(tags = ""){
   $.ajax({
     url: "/save_cluster",
     method: "POST",
     async: true,
     data: {
         cluster_name: $('#nameCluster').val(),
-        cluster: cluster_string
+        cluster: tags
     },
     beforeSend: () => {
       ShowLoadWheel();

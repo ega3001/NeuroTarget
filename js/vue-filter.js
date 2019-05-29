@@ -1,5 +1,8 @@
 // In your Javascript (external .js resource or <script> tag)
 
+var draggable = vuedraggable
+Vue.use(draggable)
+
 const Select2 = {
     props: ["options", "value"],
     template: "<select><slot></slot></select>",
@@ -43,166 +46,94 @@ const Select2 = {
 window.cluster_string = "";
 window.vue_obj = new Vue({
     el: "#app",
+    components: {
+        draggable,
+        Select2
+    },
     data() {
         return {
-            items: [],
-            selected: 1,
-            options: [{
-                    id: 1,
-                    text: "People",
-                    type: "tag"
-                },
-                {
-                    id: 2,
-                    text: "World",
-                    type: "tag"
-                },
-                {
-                    id: 3,
-                    text: "Auto",
-                    type: "cluster"
-                },
-                {
-                    id: 4,
-                    text: "Color",
-                    type: "cluster"
-                },
-                {
-                    id: 5,
-                    text: "Man",
-                    type: "cluster"
-                },
-                {
-                    id: 6,
-                    text: "Hair",
-                    type: "tag"
-                },
-                {
-                    id: 7,
-                    text: "Black",
-                    type: "tag"
-                }
+            list1: [
+              { name: "+", id: 1, type: 'operator' },
+              { name: "-", id: 2, type: 'operator' },
+              { name: "*", id: 3, type: 'operator' },
+              { name: "(", id: 4, type: 'operator' },
+              { name: ")", id: 5, type: 'operator' }
             ],
-            info: null,
-            tags: null,
-            clusters: null,
-            string: "",
-            toChange: null
+            list2: [
+            ],            
+            options: [
+              { id: 1, text: 'People', type: 'tag'},
+              { id: 2, text: 'World', type: 'tag' },
+              { id: 3, text: 'Auto', type: 'cluster' },
+              { id: 4, text: 'Color', type: 'cluster' },
+              { id: 5, text: 'Man', type: 'cluster' },
+              { id: 6, text: 'Hair', type: 'tag' },
+              { id: 7, text: 'Black', type: 'tag' },
+            ],
+            selected: 1,
+            string: ""
         };
     },
     methods: {
-        addTag: function () {
-            this.items.push({
-                id: this.items.length,
-                text: this.options[this.selected - 1].text,
-                type: this.options[this.selected - 1].type
-            });
-        },
-        addOperator: function (event) {
-            this.items.push({
-                id: this.items.length,
-                text: event.target.innerHTML,
-                type: "operator"
-            });
-        },
-        deleteTag: function (event) {
-            this.items = this.items.filter(x => {
-                return x.id != event.target.id;
-            });
-        },
-        selectTag: function (event) {
-            if (this.toChange) {
-                this.toChange.classList.toggle("selected");
-                if (this.toChange.id == event.target.id) {
-                    this.toChange = null;
-                    return;
-                }
+        removeAt(idx) {
+            this.list2.splice(idx, 1);
+          },
+          add: function() {
+            var obj = {
+              id: Object.keys(this.list2).length,
+              name: this.options[this.selected-1].text,
+              type: this.options[this.selected-1].type
             }
-            for (var i in this.items) {
-                if (this.items[i].id == event.target.id) {
-                    event.target.classList.toggle("selected");
-                    this.toChange = event.target;
-                }
+            this.list2.push(obj);
+          },
+          addOperator: function(event) {
+            var obj = {
+              id: Object.keys(this.list2).length,
+              name: event.target.innerHTML,
+              type: 'operator'
             }
-        },
-        changeTag: function (event) {
-            for (var i in this.items) {
-                if (this.items[i].id == this.toChange.id) {
-                    this.items[i].text = this.options[this.selected - 1].text;
-                    this.items[i].type = this.options[this.selected - 1].type;
-                    this.toChange.classList.toggle("selected");
-                    this.toChange = null;
-                    break;
-                }
-            }
-        },
-        changeToOperator: function (event) {
-            for (var i in this.items) {
-                if (this.items[i].id == this.toChange.id) {
-                    this.items[i].text = event.target.innerHTML;
-                    this.items[i].type = "operator";
-                    this.toChange.classList.toggle("selected");
-                    this.toChange = null;
-                    break;
-                }
-            }
-        },
-        createString: function () {
-            this.string = "";
-            for (var i in this.items) {
-                switch (this.items[i].type) {
-                    case "tag":
-                        this.string += "t_" + this.items[i].text + ";";
-                        break;
-                    case "cluster":
-                        this.string += "c_" + this.items[i].text + ";";
-                        break;
-                    case "operator":
-                        this.string += this.convert(this.items[i].text) + ";";
-                        break;
-                }
+            this.list2.push(obj);
+          },
+          convertStr: function(){
+            this.string = ""
+            for(var i in this.list2){
+              switch (this.list2[i].type) {
+                case 'tag':
+                  this.string += "t_"+this.list2[i].name+";"
+                  break
+                case 'cluster':
+                  this.string += "c_"+this.list2[i].name+";"
+                  break
+                case 'operator':
+                  console.log(this.list2[i].name);
+                  this.string += this.convert(this.list2[i].name.trim())+";"
+                  break;
+              }
             }
             this.string = this.string.slice(0, -1);
-            //Здесь можно отправить сразу же на сервер строку this.str
             ShowPhotos(this.string);
             HideTable();
             window.cluster_string = this.string;
-            // $.ajax({
-            //     url: "/get_tags_from_query",
-            //     method: "POST",
-            //     async: true,
-            //     data: {
-            //         query_id: $_GET('que'),
-            //         tags: this.string
-            //     },
-            //     success: ans => {
-            //         ans = JSON.parse(ans);
-            //         if (ans == true) {
-            //             console.log("Cluster saved!");
-            //         } else {
-            //             console.log("Error: Cluster did not save!");
-            //         }
-            //     }
-            // });
         },
-        createCluster: function () {
-            this.string = "";
-            for (var i in this.items) {
-                switch (this.items[i].type) {
-                    case "tag":
-                        this.string += "t_" + this.items[i].text + ";";
-                        break;
-                    case "cluster":
-                        this.string += "c_" + this.items[i].text + ";";
-                        break;
-                    case "operator":
-                        this.string += this.convert(this.items[i].text) + ";";
-                        break;
-                }
+        createCluster: function(){
+            this.string = ""
+            for(var i in this.list2){
+              switch (this.list2[i].type) {
+                case 'tag':
+                  this.string += "t_"+this.list2[i].name+";"
+                  break
+                case 'cluster':
+                  this.string += "c_"+this.list2[i].name+";"
+                  break
+                case 'operator':
+                  console.log(this.list2[i].name);
+                  this.string += this.convert(this.list2[i].name.trim())+";"
+                  break;
+              }
             }
             this.string = this.string.slice(0, -1);
-            SaveCluster();
-            window.cluster_string = this.string;
+            SaveCluster(this.string);
+            //не сохраняем т.к. этом может повлиять на отображение статистики
         },
         convert: function (t) {
             switch (t) {
@@ -279,13 +210,8 @@ window.vue_obj = new Vue({
                 }
             }
         });
-        // var clusters = AJAX ЗАПРОС
-        // this.createOptions(tags, clusters)
         this.createOptions(tags, clusters);
     },
-    components: {
-        Select2
-    }
 });
 
 function matchWordFromStart(params, data) {
