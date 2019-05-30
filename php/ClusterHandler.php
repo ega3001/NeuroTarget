@@ -54,8 +54,8 @@ class ClusterHandler
 			'T' => ['_Operation', 'eps']
 		];
 		$FOLLOW = [
-			'S' => ['_CloseBracket'],
-			'T' => ['_CloseBracket']
+			'S' => [],
+			'T' => ['_CloseBracket'],
 		];
 
 		$elems = explode(';', $cluster);
