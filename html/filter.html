@@ -29,6 +29,9 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.7/js/select2.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/vue@2.6.10/dist/vue.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.2/vue.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.8.4/Sortable.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Vue.Draggable/2.20.0/vuedraggable.umd.min.js"></script>
     <title>NeuroTarget - Main Page</title>
 </head>
 <body>
@@ -81,34 +84,50 @@
                             <div class="login-input-wrapper">
                                 <label>
                                     <div id="app">
-                                        <div class="tags">
-                                            <div class="tag" v-for="item in items" v-bind:id="item.id"
-                                                v-bind:class="{operator: item.type == 'operator', cluster: item.type == 'cluster'}"
-                                                @click="selectTag">
-                                                {{item.text}} <div class="my-close" v-bind:id="item.id" @click="deleteTag"></div>
+                                        <div class="elements-list">
+                                          <draggable
+                                            class="dragArea list-group"
+                                            :list="list1"
+                                            :group="{ name: 'operator', pull: 'clone', put: false }"
+                                          >
+                                            <div
+                                              class="list-group-item"
+                                              v-for="element in list1"
+                                              :key="element.name"
+                                              @click="addOperator"
+                                            >
+                                              {{ element.name }}
                                             </div>
+                                          </draggable>
+                                          <Select2 class="select2" :options="options" v-model="selected">
+                                            <option disabled value="0">Выберите одно из полей</option>
+                                          </Select2>
+                                          <button class='btn btn-primary' @click="add">Добавить</button>
+                                          <button class='btn btn-primary' @click="convertStr">Искать</button>
+                                          <div class="converted" v-if="list2.length > 0">
+                                          	<input type='text' id='nameCluster' placeholder="Название кластера">
+                                            <button class='btn btn-warning' @click="createCluster">Создать кластер</button>
+                                          </div>
                                         </div>
-                                        <Select2 :options="options" v-model="selected">
-                                            <option disabled value="0">Select one</option>
-                                        </Select2>
-                                        <button class="btn btn-primary" @click="addTag" v-if="!toChange">Добавить</button>
-                                        <button class="btn btn-primary" @click="changeTag" v-else>Изменить</button>
-                                        <div v-if="!toChange">
-                                            <button class="btn btn-primary" @click="addOperator">+</button>
-                                            <button class="btn btn-primary" @click="addOperator">*</button>
-                                            <button class="btn btn-primary" @click="addOperator">-</button>
-                                            <button class="btn btn-primary" @click="addOperator">(</button>
-                                            <button class="btn btn-primary"@click="addOperator">)</button>
+
+                                    <div class="string-list">
+                                      <draggable
+                                        class="dragArea list-group"
+                                        :list="list2"
+                                        group="operator"
+                                      >
+                                        <div
+                                          class="list-group-item"
+                                          v-bind:class="{operator: element.type == 'operator', cluster: element.type == 'cluster', tag: element.type == 'tag'}"
+                                          v-for="(element, idx) in list2"
+                                          :key="element.name"
+                                        >
+                                          {{ element.name }}
+                                          <i class="close" @click="removeAt(idx)">×</i>
                                         </div>
-                                        <div v-else>
-                                            <button class="btn btn-primary" @click="changeToOperator">+</button>
-                                            <button class="btn btn-primary" @click="changeToOperator">*</button>
-                                            <button class="btn btn-primary" @click="changeToOperator">-</button>
-                                            <button class="btn btn-primary" @click="changeToOperator">(</button>
-                                            <button class="btn btn-primary" @click="changeToOperator">)</button>
-                                        </div>
-                                        <button class="btn btn-primary" @click="createString">Искать</button>
+                                      </draggable>
                                     </div>
+                                  </div>
                                 </label>
                             </div>
                         </div>
@@ -202,6 +221,7 @@
     <div class="loader"></div>
 </div>
 
+</body>
 <script src="http://code.jquery.com/jquery-3.3.1.min.js" integrity="sha256-FgpCb/KJQlLNfOu91ta32o/NMZxltwRo8QtmkMRdAu8=" crossorigin="anonymous"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.14.3/umd/popper.min.js"
     integrity="sha384-ZMP7rVo3mIykV+2+9J3UJ46jBk0WLaUAdn689aCwoqbBJiSnjAK/l8WvCWPIPm49" crossorigin="anonymous">
@@ -214,80 +234,10 @@
 <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.production.min.js"></script>
 <script src="https://npmcdn.com/babel-core@5.8.38/browser.min.js"></script>
 
-<style scoped>
-#app {
-    text-align: center;
-}
-
-.tag {
-    background: #3273dc;
-    display: inline-block;
-    border-radius: 3px;
-    margin: 3px 5px;
-    color: #fff;
-    padding: 2px 4px;
-    cursor: pointer;
-    -webkit-touch-callout: none;
-    /* iOS Safari */
-    -webkit-user-select: none;
-    /* Safari */
-    -khtml-user-select: none;
-    /* Konqueror HTML */
-    -moz-user-select: none;
-    /* Firefox */
-    -ms-user-select: none;
-    /* Internet Explorer/Edge */
-    user-select: none;
-    /* Non-prefixed version, currently
-                            supported by Chrome and Opera */
-}
-
-.tags {
-    background: #fff;
-    box-shadow: 0 0 10px 1px rgba(0, 0, 0, 0.2);
-    border-radius: 5px;
-    padding: 5px;
-    margin: 0 auto;
-    min-height: 50px;
-}
-
-.operator {
-    background: #ff3860;
-}
-
-.cluster {
-    background: #ffdd57;
-}
-
-.selected {
-    border: 1px solid #000;
-}
-
-.my-close {
-    background: #fff;
-    color: #000;
-    border-radius: 100%;
-    padding: 0px 0px;
-    display: inline-block;
-    width: 15px;
-    height: 15px;
-    vertical-align: middle;
-    position: relative;
-}
-
-.my-close::after {
-    content: "x";
-    color: #000;
-    position: absolute;
-    top: -4px;
-    left: 4px;
-}
-</style>
 <script src="../js/jquery.range.js"></script>
 <script src="../js/index.js"></script>
 
 <script src="../js/action_menu.js"></script>
 <script src="../js/filter.js"></script>
 <script src="../js/vue-filter.js"></script>
-</body>
 </html>

@@ -27,6 +27,7 @@ module.exports = class DBHandler{
 
                 this.connection.query(query, err => {
                     if(err) throw err;
+         			console.log('PUSH URL');
                     resolve();
                 });
             });
@@ -34,10 +35,10 @@ module.exports = class DBHandler{
     }
 
     GetParseidById(id){
-        let query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID" = '${id}';`;
-
+        var query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID"='${id}'`;
         return new Promise(resolve => {
             this.connection.query(query, (err, res) => {
+                    console.log("q: " + query);
                 if (err) throw err;
                 try{
                     if(res['rows'][0] == undefined){
@@ -81,6 +82,7 @@ module.exports = class DBHandler{
 
                 this.connection.query(query, err => {
                     if (err) throw err;
+                    console.log('CONNECT TAG TO PRASEID');
                     resolve();
                 });
             });
@@ -96,6 +98,7 @@ module.exports = class DBHandler{
                 let tag_promise = this.AddTagAndGetTagid(keywordinfo.keyword);
                 personsPromises.push(tag_promise);
                 tag_promise.then(res => {
+                	console.log('GET TAG');
                     keywordinfo.tag_id = res;
                 });
             });
@@ -106,6 +109,7 @@ module.exports = class DBHandler{
             let parseid_promise = this.GetParseidById(person.id);
             personsPromises.push(parseid_promise);
             parseid_promise.then(res => {
+            	console.log('GET PARSEID');
                 person.parse_id = res;
             });
         });
@@ -120,9 +124,10 @@ module.exports = class DBHandler{
         return Promise.all(promises);
     }
     async HandlePersons(persons){
-        var promiseAll = [];
-        var UrlsPromise = this.AddAvatarUrlsByPersons(persons);
-        var TagsPromise = this.TagsHandle(persons);
+    	console.log('START');
+        let promiseAll = [];
+        let UrlsPromise = this.AddAvatarUrlsByPersons(persons);
+        let TagsPromise = this.TagsHandle(persons);
 
         promiseAll.push(UrlsPromise);
         promiseAll.push(TagsPromise);
