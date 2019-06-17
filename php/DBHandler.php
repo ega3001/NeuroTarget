@@ -337,6 +337,18 @@ class DBHandler{
 	    return $result;
 	}
 	//--------------------//
+	public function GetClusterElems($cluster_name)
+	{
+		if($cluster_name == '')
+			throw new Exception("Пустое название.");
+		
+		$user_id = $this->auth->getUserId();
+		$clh = new ClusterHandler($this->dbh, $user_id, $template);
+		$cluster_elems = $clh->GetClusterElems($cluster_name);
+
+		return $cluster_elems;
+	}
+	//--------------------//
 	public function GetTagsStatFromQuery($query_id, $cluster)
 	{
 		$query = '';
@@ -395,7 +407,7 @@ class DBHandler{
 	public function GetTagsFromQuery($query_id, $cluster)
 	{
 		$query = '';
-
+		
 		if( $cluster != '' ){
 			$query .= ' select * from (';
 				
@@ -408,7 +420,7 @@ class DBHandler{
 				EXISTS (SELECT * FROM "Tag" t 
 				JOIN "ParseIDVK-Tag" pt ON pt."Tag_ID"=t."Tag_ID" 
 				WHERE pt."ParseIDVK_ID"=qp."ParseIDVK_ID" 
-				AND t."TagName" = \'{tag}\') 
+				AND t."TagName" like \'{tag}\') 
 				GROUP BY t."TagName")';
 			
 			$user_id = $this->auth->getUserId();
@@ -494,24 +506,36 @@ class DBHandler{
 		    'total_count'   => $cnt,
 		    'users'         => $result
         ];
-	}//--------------------//
+	}
+	//--------------------//
 	public function SaveUsersFromQuery($query_id, $cluster)
 	{
-		$query =
-			'	select distinct p."TextID"
-				FROM "Query" q  
-				JOIN "Query-ParseIDVK" qp ON q."Query_ID"=qp."Query_ID" 
-				JOIN "ParseIDVK" p ON qp."ParseIDVK_ID"=p."ParseIDVK_ID" 
-				WHERE q."Query_ID"= '. $query_id;
+		$query = '';
 
 		if( $cluster != '' ){
-			$query .= ' AND EXISTS ( ';
-
-			$user_id = $this->GetUserIdByQueryId($query_id);
-			$clh = new ClusterHandler($this->dbh, $user_id);
+    	    if(!ClusterHandler::IsCorrect($cluster))
+    			throw new Exception("Некорректное выражение кластера ");
+    			
+			$query .= ' select * from (';
+			
+			$template = 
+			'	select distinct p."TextID"
+				FROM "Query-ParseIDVK" qp 
+				JOIN "ParseIDVK" p ON qp."ParseIDVK_ID"=p."ParseIDVK_ID" 
+				JOIN "ParseIDVK-Tag" pt ON p."ParseIDVK_ID"=pt."ParseIDVK_ID" 
+				JOIN "Tag" t ON pt."Tag_ID"=t."Tag_ID" 
+				WHERE qp."Query_ID"= '. $query_id. ' AND t."TagName" like \'{tag}\' ';
+			$user_id = $this->auth->getUserId();
+			$clh = new ClusterHandler($this->dbh, $user_id, $template);
 			$cluster_query = $clh->GetQuery($cluster);
 			
-			$query .= $cluster_query. ' )';
+			$query .= $cluster_query. ' ) as tbl';
+		} else {
+			$query .=
+			'	select distinct p."TextID"
+				FROM "Query-ParseIDVK" qp
+				JOIN "ParseIDVK" p ON qp."ParseIDVK_ID"=p."ParseIDVK_ID" 
+				WHERE qp."Query_ID"= '. $query_id;
 		}
 
 		$run = $this->dbh->prepare($query);

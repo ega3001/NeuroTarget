@@ -204,6 +204,44 @@ class ClusterHandler
 
 		return $query;
 	}
+
+	private function GetCustomView($elem){
+
+		$class = self::GetClass($elem);
+		switch ($class) {
+			case '_OpenBracket':
+			case '_CloseBracket':
+				return $elem;
+			case '_Tag':
+			case '_Cluster':
+				return substr($elem, 2);
+			case '_ALL':
+				return 'ALL';
+			case 'AND':
+				return '*';
+			case 'OR':
+				return '+';
+			case 'DIFF':
+				return '-';
+		}
+
+		throw new Exception("Неизвестный элемент выражения \"{$elem}\".");
+	}
+
+	public function GetClusterElems($cluster_name)
+	{
+		$cluster = $this->GetClusterText($cluster_name);
+
+		$elems = explode(';', $this->DeployCluster($cluster));
+
+		$custom_view = [];
+
+		foreach ($elems as $elem) {
+			$custom_view[] = $this->GetCustomView($elem);
+		}
+
+		return $custom_view;
+	}
 }
 
 ?>

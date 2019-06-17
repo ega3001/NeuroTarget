@@ -2,6 +2,10 @@ module.exports = class DBHandler{
     
     constructor(){
         this.ConnectDB();
+        this.push_url = 0;
+        this.add_tag = 0;
+        this.get_parse_id = 0;
+        this.push_tag_on_id = 0;
     }
 
     ConnectDB(){
@@ -11,7 +15,7 @@ module.exports = class DBHandler{
             user:       'postgres',
             host:       'localhost',
             database:   'DB',
-            password:   '',
+            password:   '123',
             port:       5432,
         });
         this.connection.connect()
@@ -27,7 +31,7 @@ module.exports = class DBHandler{
 
                 this.connection.query(query, err => {
                     if(err) throw err;
-         			console.log('PUSH URL');
+                    this.push_url++;
                     resolve();
                 });
             });
@@ -38,7 +42,6 @@ module.exports = class DBHandler{
         var query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID"='${id}'`;
         return new Promise(resolve => {
             this.connection.query(query, (err, res) => {
-                    console.log("q: " + query);
                 if (err) throw err;
                 try{
                     if(res['rows'][0] == undefined){
@@ -51,12 +54,13 @@ module.exports = class DBHandler{
                     console.log(error);
                     console.log("---------------------------");
                 }
+                this.get_parse_id++;
                 resolve(res['rows'][0].ParseIDVK_ID);
             });
         });
     }
-    AddTagAndGetTagid(tag_name){
 
+    AddTagAndGetTagid(tag_name){
         tag_name = tag_name.replace("'", "''"); // Экранирование одинарной кавычки для PostgreSQL
         let query_insert = `INSERT INTO "Tag"("TagName") VALUES ('${tag_name}')`; // Здесь должен быть IGNORE
             query_insert += `ON CONFLICT DO NOTHING`;
@@ -68,13 +72,14 @@ module.exports = class DBHandler{
                 if (err) throw err;
                 this.connection.query(query_select, (err, res) => {
                     if (err) throw err;
+                    this.add_tag++;
                     resolve(res['rows'][0].Tag_ID);
                 });
             });
         });
     }
+    
     AddPersonTags(person){
-
         return new Promise(resolve => {
             person.keywords.forEach(keywordinfo => {
                 let query = `INSERT INTO "ParseIDVK-Tag"("ParseIDVK_ID", "Tag_ID", "Value") VALUES('${person.parse_id}','${keywordinfo.tag_id}','${keywordinfo.score}')`; // Здесь должен быть IGNORE
@@ -82,7 +87,7 @@ module.exports = class DBHandler{
 
                 this.connection.query(query, err => {
                     if (err) throw err;
-                    console.log('CONNECT TAG TO PRASEID');
+                    this.push_tag_on_id++;
                     resolve();
                 });
             });
@@ -98,7 +103,6 @@ module.exports = class DBHandler{
                 let tag_promise = this.AddTagAndGetTagid(keywordinfo.keyword);
                 personsPromises.push(tag_promise);
                 tag_promise.then(res => {
-                	console.log('GET TAG');
                     keywordinfo.tag_id = res;
                 });
             });
@@ -109,7 +113,6 @@ module.exports = class DBHandler{
             let parseid_promise = this.GetParseidById(person.id);
             personsPromises.push(parseid_promise);
             parseid_promise.then(res => {
-            	console.log('GET PARSEID');
                 person.parse_id = res;
             });
         });
@@ -124,14 +127,17 @@ module.exports = class DBHandler{
         return Promise.all(promises);
     }
     async HandlePersons(persons){
-    	console.log('START');
+        this.push_url = 0;
+        this.add_tag = 0;
+        this.get_parse_id = 0;
+        this.push_tag_on_id = 0;
         let promiseAll = [];
         let UrlsPromise = this.AddAvatarUrlsByPersons(persons);
         let TagsPromise = this.TagsHandle(persons);
 
         promiseAll.push(UrlsPromise);
         promiseAll.push(TagsPromise);
-
+        
         return Promise.all(promiseAll);
     }
 };

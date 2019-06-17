@@ -12,8 +12,9 @@ class ClusterHandler
 	private $set;
 	private static $gramm = [
 			'S' => [ 
-				'_Tag' => ['_Tag', 'T'],  
-				'_Cluster' => ['_Cluster', 'T'],  
+				'_Tag' => ['_Tag', 'T'],
+				'_Cluster' => ['_Cluster', 'T'],
+				'_ALL' => ['_ALL', 'T'],
 				'_OpenBracket' => ['_OpenBracket', 'S', '_CloseBracket', 'T']
 			],
 			'T' => [
@@ -37,6 +38,7 @@ class ClusterHandler
 			'_OpenBracket' 	=> 'AutoBracket',
 			'_CloseBracket' => 'AutoBracket',
 			'_Cluster' 		=> 'AutoCluster',
+			'_ALL' 			=> 'AutoALL',
 		];
 	}
 
@@ -52,8 +54,8 @@ class ClusterHandler
 			'T' => ['_Operation', 'eps']
 		];
 		$FOLLOW = [
-			'S' => ['_CloseBracket'],
-			'T' => ['_CloseBracket']
+			'S' => [],
+			'T' => ['_CloseBracket'],
 		];
 
 		$elems = explode(';', $cluster);
@@ -98,6 +100,9 @@ class ClusterHandler
 				return '_OpenBracket';
 			case ')'  :
 				return '_CloseBracket';
+		}
+		if($elem == 't_ALL'){
+			return '_ALL';
 		}
 		if(stripos($elem, 't_') === 0){
 			return '_Tag';
@@ -145,6 +150,13 @@ class ClusterHandler
 	private function AutoOperation(&$str, $operation)
 	{
 		$str .= $this->operations[$operation]. ' ';
+	}
+
+	private function AutoALL(&$str, $all)
+	{
+		$temp = str_replace('select', 'select distinct', $this->template);
+		$temp = str_replace('{tag}', '%', $temp);
+		$str .= $temp. ' ';
 	}
 
 	private function AutoCluster(&$str, $cluster_name)

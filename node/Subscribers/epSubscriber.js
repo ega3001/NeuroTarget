@@ -50,9 +50,10 @@ module.exports = class epSubscriber {
                 DH.debug_message("[*] epSubscriber launched. To exit press CTRL+C", q);
                 ch.consume(q, async (msg) => {
                     let decoded_content = JSON.parse(msg.content.toString());
+                    // console.log("Содержимое сообещения из epQueue: ", decoded_content);
                     let key = null;
                     
-                    //console.log(msg);
+                    // console.log(msg);
                     
                     while(true){
                         await epApi.getKeysFromDb().then((results) => {
@@ -63,13 +64,13 @@ module.exports = class epSubscriber {
 
                         if (vaKey) break;
                         else{
-                            DH.debug_message("Invalid key, ждем новый");
+                            // DH.debug_message("Invalid key, ждем новый");
                             await Timeout.set(this.delay);
                         }
 
                     }
 
-                    DH.debug_message("Ключ проверен, получаем данные");
+                    // DH.debug_message("Ключ проверен, получаем данные");
 
                     let promises = [];
 
@@ -120,6 +121,10 @@ module.exports = class epSubscriber {
                                 return;
                             }
                             
+                            // if (decoded_content.response[i]['has_photo'] = 0) {
+                            //     console.log("HAS PHOTO 0: ", decoded_content.response[i]);
+                            // }
+
                             let send_content = {
                                 "id": decoded_content.response[i].id,
                                 "photo_max_orig": decoded_content.response[i].photo_max_orig,
@@ -130,10 +135,10 @@ module.exports = class epSubscriber {
                             // console.log("send_content: ", send_content);
                             //console.log("send_content: ", send_content);
                     });
+                    if(all_content != [])
+                        ch.sendToQueue(send, Buffer.from(JSON.stringify(all_content)), {persistent: true});
 
-                    ch.sendToQueue(send, Buffer.from(JSON.stringify(all_content)), {persistent: true});
-
-                    DH.debug_message("Данные получены, подписываем");
+                    // DH.debug_message("Данные получены, подписываем");
                     key = null;
                     data = null;
                     decoded_content = null;

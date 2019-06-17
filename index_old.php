@@ -157,16 +157,6 @@ $klein->respond('POST','/get_tags_from_query', function() use ($dbhandler){
     return json_encode($result);
 });
 
-$klein->respond('POST','/get_cluster_view', function() use ($dbhandler){
-    $result = [];
-    try {
-        $result = $dbhandler->GetClusterElems($_POST['cluster_name']);
-    } catch(Exception $e) {
-        return json_encode(ExceptionString($e));
-    }
-    return json_encode($result);
-});
-
 $klein->respond('POST','/get_tags_stat_from_query', function() use ($dbhandler){
     $result = [];
     try {
@@ -256,7 +246,7 @@ $klein->respond("POST", "/uploadFiles", function ($params) {
 
 $klein->respond('GET', '/getUserPhotosLinks', function ($params) {
     $QueueName =  'vkQueue';
-   
+
     $GLOBALS["channel"]->queue_declare($QueueName, false, true, false, false);
 
     //создаем сообщение для очереди
