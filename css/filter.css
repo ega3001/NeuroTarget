@@ -274,15 +274,82 @@ nav .cabinet .dropdown button:hover{
     width: 50%;
 }
 
+.table-tags {
+    display: flex;
+    flex-direction: column;
+}
+
+.tags-order {
+    align-self: center;
+    margin: 5px;
+    cursor: pointer;
+}
+
+.tags-order:hover, .tags-pages:hover, .tags-page-number:hover, .photos-pages:hover, .photos-page-number:hover {
+    color: #379edf;
+}
+
+.tags-pages-wrapper {
+    display: flex;
+    justify-content: center;
+    font-size: 1.25em;
+}
+
+.tags-pages, .photos-pages {
+    cursor: pointer;
+}
+
+.tags-pages_cur {
+    margin: 0 12.5%;
+}
+
+.tags-pages-numbers-wrapper {
+    display: flex;
+    justify-content: center;
+    font-size: 1.25em;
+}
+
+.tags-page-number {
+    margin: 0 10px;
+    cursor: pointer;
+}
+
 #gallery{
     display: flex;
     flex-wrap: wrap;
+}
+
+.photos {
+    display: flex;
+    flex-direction: column;
 }
 
 .photo{
     width: 200px;
     height: 200px;
     overflow: hidden;
+}
+
+.photos-pages-wrapper {
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
+    font-size: 1.25em;
+}
+
+.photos-pages-numbers-wrapper {
+    display: flex;
+    justify-content: center;
+    font-size: 1.25em;
+}
+
+.photos-pages_cur {
+    margin: 0 7%;
+}
+
+.photos-page-number {
+    margin: 0 10px;
+    cursor: pointer;
 }
 
 .photo img{

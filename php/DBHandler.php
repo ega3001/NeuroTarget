@@ -349,7 +349,7 @@ class DBHandler{
 		return $cluster_elems;
 	}
 	//--------------------//
-	public function GetTagsStatFromQuery($query_id, $cluster)
+	public function GetTagsStatFromQuery($query_id, $cluster, $isDescent="true")
 	{
 		$query = '';
 
@@ -381,8 +381,14 @@ class DBHandler{
 				WHERE  qp."Query_ID"= '. $query_id;
 			$query .= 'group by t."TagName"';
 		}
-
-		$query .= ' order by cnt desc ';
+		
+		if ($isDescent == "true") {
+			$query .= ' order by cnt desc ';
+		}
+		else {
+			$query .= ' order by cnt asc ';
+		}
+		
 		// return $query;
 	    $run = $this->dbh->prepare($query);
 
@@ -459,7 +465,7 @@ class DBHandler{
 	    return $result;
 	}
 	//--------------------//
-	public function GetUsersFromQuery($query_id, $cluster)
+	public function GetUsersFromQuery($query_id, $cluster, $offset, $photosNumOnPage)
 	{
 		$query = '';
 
@@ -490,16 +496,21 @@ class DBHandler{
 		}
 
 		$run = $this->dbh->prepare($query);
-
 		if( !$run->execute() ){
 			throw new Exception('Ошибка при выполнении запроса.'. $query);
 		}
-        
-        $cnt = $run->rowCount();
+		$cnt = $run->rowCount();
+		
+		$query = $query.' ORDER BY "TextID" LIMIT '.$photosNumOnPage.' OFFSET '.$offset;
+		
+		$run = $this->dbh->prepare($query);
+		if( !$run->execute() ){
+			throw new Exception('Ошибка при выполнении запроса.'. $query);
+		}
     
 		$result = [];
-		for ($i = 0; $i < min($cnt, 100); $i++) {
-		     $result[] = $run->fetch(PDO::FETCH_ASSOC);
+		while ($row = $run->fetch(PDO::FETCH_ASSOC)) {
+		     $result[] = $row;
 		}
 
 		return [

@@ -170,7 +170,7 @@ $klein->respond('POST','/get_cluster_view', function() use ($dbhandler){
 $klein->respond('POST','/get_tags_stat_from_query', function() use ($dbhandler){
     $result = [];
     try {
-        $result = $dbhandler->GetTagsStatFromQuery($_POST['query_id'], $_POST['cluster']);
+        $result = $dbhandler->GetTagsStatFromQuery($_POST['query_id'], $_POST['cluster'], $_POST['isDescent']);
     } catch(Exception $e) {
         return json_encode(ExceptionString($e));
     }
@@ -209,7 +209,7 @@ $klein->respond('POST','/get_tags', function() use ($dbhandler){
 $klein->respond('POST','/get_users_from_query', function() use ($dbhandler){
     $result = [];
     try {
-        $result = $dbhandler->GetUsersFromQuery($_POST['query_id'], $_POST['cluster']);
+        $result = $dbhandler->GetUsersFromQuery($_POST['query_id'], $_POST['cluster'], $_POST['offset'], $_POST['photosNumOnPage']);
     } catch(Exception $e) {
         return json_encode(ExceptionString($e));
     }

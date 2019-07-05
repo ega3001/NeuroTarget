@@ -111,7 +111,9 @@ window.vue_obj = new Vue({
               }
             }
             this.string = this.string.slice(0, -1);
-            ShowPhotos(this.string);
+            offset = 0; // определена в filter.js
+            curPhotosPageNum = 1;  // определена в filter.js
+            ShowPhotos(this.string, offset);
             HideTable();
             window.cluster_string = this.string;
         },
