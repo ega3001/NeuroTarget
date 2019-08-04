@@ -18,7 +18,8 @@ module.exports = class vkSubscriber{
               console.log("[*] vkSubscriber launched. To exit press CTRL+C", q);
               ch.consume(q, (msg) => {
                   let vkApi = new VkApi(this.key);
-                  let ids = JSON.parse(msg.content.toString()).file;
+                //   console.log(msg.content.toString());
+                  let ids = JSON.parse(msg.content.toString()).file; // Падает здесь JSON.parse не может отработать на некорректных данных msg
                   
                   for (let i = 0; i < ids.length; i++){
                       ids[i] = ids[i].replace(/\r?\n/g, "");

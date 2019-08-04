@@ -254,6 +254,7 @@ $klein->respond("POST", "/uploadFiles", function ($params) {
     echo json_encode($data);
 });
 
+// TODO: пропускать дальше только корретные данные
 $klein->respond('GET', '/getUserPhotosLinks', function ($params) {
     $QueueName =  'vkQueue';
    

@@ -98,6 +98,7 @@ $(document).ready(()=>{
                             },
                             success: function(respond){
                                 console.log("Respond after /getUserPhotosLinks: " + respond);
+                                
                                 HideLoadWheel();
                                 InsertMessage("Запрос успешно создан");
                                 ShowResponseModal();

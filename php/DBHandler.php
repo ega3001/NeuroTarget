@@ -66,6 +66,12 @@ class DBHandler{
 		    die();
 		}
 
+		// Проверка, что файл текстовый: формат txt
+		$ex = pathinfo($_FILES['file']['name'], PATHINFO_EXTENSION);
+		if ($ex != "txt") {
+			return json_encode(array("success" => false, "data" => 'Загрузите txt файл'));
+		}
+
 		$ids = file($_FILES['file']['tmp_name']);
 		$reg = '/^\d+(\r\n|\z)/';
 		$sz = count($ids);
