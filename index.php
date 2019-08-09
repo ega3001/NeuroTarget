@@ -13,7 +13,6 @@ $dbhandler = new DBHandler("pgsql", $database, $host, $port, $login, $password);
 
 use PhpAmqpLib\Connection\AMQPStreamConnection;
 use PhpAmqpLib\Message\AMQPMessage;
-
 $connection = new AMQPStreamConnection('localhost', 5672, 'guest', 'guest');
 $channel = $connection->channel();
 
@@ -72,16 +71,8 @@ $klein->respond('GET', '/settings', function () use ($dbhandler){
     }
 });
 
-$klein->respond('POST', '/check_invite', function () use ($dbhandler){
-    echo $dbhandler->CheckInvite($_POST['invite']);
-});
-
 $klein->respond('POST', '/load_file', function () use ($dbhandler){
   echo $dbhandler->LoadFile();
-});
-
-$klein->respond('POST', '/connect_invite', function () use ($dbhandler){
-    echo $dbhandler->ConnectInvite($_POST['invite'], $_POST['id']);
 });
 
 $klein->respond('POST', '/login', function () use ($dbhandler){
@@ -132,11 +123,7 @@ $klein->respond('GET', '/register', function () use ($dbhandler){
 });
 
 $klein->respond('POST', "/register", function () use ($dbhandler){
-    echo $dbhandler->Register($_POST['email'], $_POST['pass']);
-});
-
-$klein->respond('POST', "/delete_register", function () use ($dbhandler){
-    echo $dbhandler->DeleteRegister($_POST['id']);
+    echo $dbhandler->Register($_POST['email'], $_POST['pass'], $_POST['invite']);
 });
 
 $klein->respond('POST', "/change_password", function () use ($dbhandler){
@@ -149,8 +136,12 @@ $klein->respond('POST','/get_queries',function() use ($dbhandler){
 
 $klein->respond('POST','/get_tags_from_query', function() use ($dbhandler){
     $result = [];
+    $min_score = $_POST['min_score'] ? $_POST['min_score'] : MIN_SCORE; 
     try {
-        $result = $dbhandler->GetTagsFromQuery($_POST['query_id'], $_POST['cluster']);
+        $result = $dbhandler->GetTagsFromQuery(
+            $_POST['query_id'], $_POST['cluster'],
+            $min_score    
+        );
     } catch(Exception $e) {
         return json_encode(ExceptionString($e));
     }
@@ -169,8 +160,11 @@ $klein->respond('POST','/get_cluster_view', function() use ($dbhandler){
 
 $klein->respond('POST','/get_tags_stat_from_query', function() use ($dbhandler){
     $result = [];
+    $min_score = $_POST['min_score'] ? $_POST['min_score'] : MIN_SCORE; 
     try {
-        $result = $dbhandler->GetTagsStatFromQuery($_POST['query_id'], $_POST['cluster'], $_POST['isDescent']);
+        $result = $dbhandler->GetTagsStatFromQuery(
+            $_POST['query_id'], $_POST['cluster'], 
+            $_POST['isDescent'], $min_score);
     } catch(Exception $e) {
         return json_encode(ExceptionString($e));
     }
@@ -208,8 +202,13 @@ $klein->respond('POST','/get_tags', function() use ($dbhandler){
 
 $klein->respond('POST','/get_users_from_query', function() use ($dbhandler){
     $result = [];
+    $min_score = $_POST['min_score'] ? $_POST['min_score'] : MIN_SCORE;  
     try {
-        $result = $dbhandler->GetUsersFromQuery($_POST['query_id'], $_POST['cluster'], $_POST['offset'], $_POST['photosNumOnPage']);
+        $result = $dbhandler->GetUsersFromQuery(
+            $_POST['query_id'], $_POST['cluster'], 
+            $_POST['offset'], $_POST['photosNumOnPage'],
+            $min_score
+        );
     } catch(Exception $e) {
         return json_encode(ExceptionString($e));
     }
@@ -218,8 +217,12 @@ $klein->respond('POST','/get_users_from_query', function() use ($dbhandler){
 
 $klein->respond('GET','/save_users_from_query',function() use ($dbhandler){
     $result = [];
+    $min_score = $_POST['min_score'] ? $_POST['min_score'] : MIN_SCORE;  
     try {
-        $result = $dbhandler->SaveUsersFromQuery($_GET['query_id'], $_GET['cluster']);
+        $result = $dbhandler->SaveUsersFromQuery(
+            $_GET['query_id'], $_GET['cluster'],
+            $min_score
+        );
     } catch(Exception $e) {
         return json_encode(ExceptionString($e));
     }

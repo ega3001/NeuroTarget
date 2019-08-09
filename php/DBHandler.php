@@ -102,31 +102,6 @@ class DBHandler{
 	/*=======================================================================
 	===========================QUERY_FUNCTIONS===============================
 	//=====================================================================*/
-	public function CheckInvite($invite)//$_POST['invite']
-	{
-		if (isset($invite)) {
-	        $query = "select * FROM \"Referal\" WHERE \"User_ID\" IS NULL AND \"Token\" = '{$invite}'";
-	        $result = [];
-	        foreach ($this->dbh->query($query) as $row) {
-				$result[count($result)] = $row;
-	        }
-	        if (count($result) > 0)
-	        	return 'Success';
-	        return 'Failed';
-   		}
-        return 'Failed';
-	}
-	//--------------------//
-	public function ConnectInvite($invite, $id)//$_POST['invite'] , $_POST['id']
-	{
-		if (isset($invite) AND isset($id)) {
-	        $query = "update \"Referal\" SET \"User_ID\" = '{$id}' WHERE \"Token\" = '{$invite}'";
-	        $this->dbh->query($query);
-	        return 'Success';
-    	}
-        return 'Failed';
-	}
-	//--------------------//
 	public function LogIn($email, $pass)
 	{
 		if(isset($email) AND isset($pass)) {
@@ -168,7 +143,44 @@ class DBHandler{
 		}
 	}
 	//--------------------//
-	public function Register($email, $pass)
+	public function Register($email, $pass, $invite){
+		try{
+			$this->CheckInvite($invite);
+			$id = $this->RegisterUserWithoutInvite($email, $pass);
+			$this->ConnectInvite($invite, $id);
+			return 'Success';
+		}
+		catch(Exception $e){
+			return $e->getMessage();
+		}
+	}
+	//--------------------//
+	public function CheckInvite($invite)//$_POST['invite']
+	{
+		if (isset($invite)) {
+	        $query = "select * FROM \"Referal\" WHERE \"User_ID\" IS NULL AND \"Token\" = '{$invite}'";
+	        $result = [];
+	        foreach ($this->dbh->query($query) as $row) {
+				$result[count($result)] = $row;
+	        }
+	        if (count($result) > 0)
+	        	return true;
+	        throw new Exception ('Введен не существующий invite-ключ');
+   		}
+        throw new Exception ('Invite-ключ не введен');
+	}
+	//--------------------//
+	public function ConnectInvite($invite, $id)//$_POST['invite'] , $_POST['id']
+	{
+		if (isset($invite) AND isset($id)) {
+	        $query = "update \"Referal\" SET \"User_ID\" = '{$id}' WHERE \"Token\" = '{$invite}'";
+	        $this->dbh->query($query);
+	        return true;
+    	}
+        throw new Exception ('При регистрации возникла ошибка №1, обратитесь в тех. поддержку');
+	}
+	//--------------------//
+	public function RegisterUserWithoutInvite($email, $pass)
 	{
 	    try {
 	        //$auth = $GLOBALS['auth'];
@@ -177,26 +189,16 @@ class DBHandler{
 	        // we have signed up a new user with the ID `$userId`
 	    }
 	    catch (\Delight\Auth\InvalidEmailException $e) {
-	        return 'invalid email address';
+	        throw new Exception('Ошибка! Проверьте правильность ввода e-mail');
 	    }
 	    catch (\Delight\Auth\InvalidPasswordException $e) {
-	        return 'invalid password';
+	     	throw new Exception('Ошибка! Проверьте правильность ввода пароля');
 	    }
 	    catch (\Delight\Auth\UserAlreadyExistsException $e) {
-	        $query = "select \"check_invite\"('{$email}')";
-	        //echo $query;
-	        $result = [];
-	        foreach ($this->dbh->query($query) as $row) {
-	            $result[count($result)] = $row;
-	        }
-	        if (count($result) > 0 AND $result[0][0] === '1') return 'user already exists';
-	        else{
-	            $this->auth->admin()->deleteUserByEmail($email);
-	            return 'try another one';
-	        }
+	        throw new Exception('Ошибка! Пользователь с такой почтой уже существует');
 	    }
 	    catch (\Delight\Auth\TooManyRequestsException $e) {
-	        return 'too many requests';
+	        throw new Exception('Ошибка! Код ошибки №2. Попробуйте еще раз позже или обратитесь в тех. поддержку');
 	    }
 	}
 	//--------------------//
@@ -355,7 +357,7 @@ class DBHandler{
 		return $cluster_elems;
 	}
 	//--------------------//
-	public function GetTagsStatFromQuery($query_id, $cluster, $isDescent="true")
+	public function GetTagsStatFromQuery($query_id, $cluster, $isDescent="true", $minScore = 0.3)
 	{
 		$query = '';
 
@@ -367,7 +369,7 @@ class DBHandler{
 				FROM "Query-ParseIDVK" qp 
 				JOIN "ParseIDVK-Tag" pt ON qp."ParseIDVK_ID"=pt."ParseIDVK_ID" 
 				JOIN "Tag" t ON pt."Tag_ID"=t."Tag_ID" 
-				WHERE qp."Query_ID"= '. $query_id. ' AND 
+				WHERE qp."Query_ID"= '. $query_id. ' AND pt."Value" >= '. $minScore. ' AND 
 				t."TagName" like \'{tag}\')';
 			
 			$user_id = $this->auth->getUserId();
@@ -416,7 +418,7 @@ class DBHandler{
 	    return $result;
 	}
 	//--------------------//
-	public function GetTagsFromQuery($query_id, $cluster)
+	public function GetTagsFromQuery($query_id, $cluster, $minScore = 0.3)
 	{
 		$query = '';
 		
@@ -432,7 +434,7 @@ class DBHandler{
 				EXISTS (SELECT * FROM "Tag" t 
 				JOIN "ParseIDVK-Tag" pt ON pt."Tag_ID"=t."Tag_ID" 
 				WHERE pt."ParseIDVK_ID"=qp."ParseIDVK_ID" 
-				AND t."TagName" like \'{tag}\') 
+				AND t."TagName" like \'{tag}\' AND pt."Value" >= '. $minScore. ')  
 				GROUP BY t."TagName")';
 			
 			$user_id = $this->auth->getUserId();
@@ -471,7 +473,7 @@ class DBHandler{
 	    return $result;
 	}
 	//--------------------//
-	public function GetUsersFromQuery($query_id, $cluster, $offset, $photosNumOnPage)
+	public function GetUsersFromQuery($query_id, $cluster, $offset, $photosNumOnPage, $minScore = 0.3)
 	{
 		$query = '';
 
@@ -479,10 +481,10 @@ class DBHandler{
     	    if(!ClusterHandler::IsCorrect($cluster))
     			throw new Exception("Некорректное выражение кластера ");
     			
-			$query .= ' select * from (';
+			$query .= ' select "TextID", "AvatarURL" from (';
 			
 			$template = 
-			'	select p."TextID", p."AvatarURL"
+			'	select p."TextID", p."AvatarURL", pt."Value"
 				FROM "Query-ParseIDVK" qp 
 				JOIN "ParseIDVK" p ON qp."ParseIDVK_ID"=p."ParseIDVK_ID" 
 				JOIN "ParseIDVK-Tag" pt ON p."ParseIDVK_ID"=pt."ParseIDVK_ID" 
@@ -492,7 +494,7 @@ class DBHandler{
 			$clh = new ClusterHandler($this->dbh, $user_id, $template);
 			$cluster_query = $clh->GetQuery($cluster);
 			
-			$query .= $cluster_query. ' ) as tbl';
+			$query .= $cluster_query. ' ) as tbl where tbl."Value" >= '. $minScore;
 		} else {
 			$query .=
 			'	select distinct p."TextID", p."AvatarURL"
@@ -525,7 +527,7 @@ class DBHandler{
         ];
 	}
 	//--------------------//
-	public function SaveUsersFromQuery($query_id, $cluster)
+	public function SaveUsersFromQuery($query_id, $cluster, $minScore = 0.3)
 	{
 		$query = '';
 
@@ -533,10 +535,10 @@ class DBHandler{
     	    if(!ClusterHandler::IsCorrect($cluster))
     			throw new Exception("Некорректное выражение кластера ");
     			
-			$query .= ' select * from (';
+			$query .= ' select "TextID" from (';
 			
 			$template = 
-			'	select distinct p."TextID"
+			'	select distinct p."TextID", pt."Value"
 				FROM "Query-ParseIDVK" qp 
 				JOIN "ParseIDVK" p ON qp."ParseIDVK_ID"=p."ParseIDVK_ID" 
 				JOIN "ParseIDVK-Tag" pt ON p."ParseIDVK_ID"=pt."ParseIDVK_ID" 
@@ -546,7 +548,7 @@ class DBHandler{
 			$clh = new ClusterHandler($this->dbh, $user_id, $template);
 			$cluster_query = $clh->GetQuery($cluster);
 			
-			$query .= $cluster_query. ' ) as tbl';
+			$query .= $cluster_query. ' ) as tbl where tbl."Value" >= '. $minScore;
 		} else {
 			$query .=
 			'	select distinct p."TextID"

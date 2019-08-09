@@ -77,7 +77,7 @@ module.exports = class epSubscriber {
                     decoded_content.response.map((item) => {
 
                         let photo_link = item.photo_max_orig;
-                        let params = {'url': photo_link, 'num_keywords': 50};
+                        let params = {'url': photo_link, 'num_keywords': 100};
                         let link = `https://api.everypixel.com/v1/keywords?${httpBuildQuery(params)}`;
 
                         let local_key = `Bearer ${key}`;
