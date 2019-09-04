@@ -1,5 +1,5 @@
 let amqp = require('amqplib/callback_api');
-let DBHandler = require('../custom-libs/DBH-test3');
+let DBHandler = require('../custom-libs/DBH');
 let fs = require("fs");
 
 // let count = 0;

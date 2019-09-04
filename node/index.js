@@ -36,9 +36,9 @@ new UpdateKeyHelper(
 ).listen();
 
 let st = new Starter({
-    ep: 10,
+    ep: 5,
     vk: 1,
-    db: 10,
+    db: 5,
     memory: false
 });
 

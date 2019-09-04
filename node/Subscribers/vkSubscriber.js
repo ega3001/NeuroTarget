@@ -1,8 +1,10 @@
 let VkApi = require('../custom-libs/VkApi');
 let amqp = require('amqplib/callback_api');
+let DBHandler = require('../custom-libs/DBH');
 
 module.exports = class vkSubscriber{
   constructor(key){
+    this.dbh = new DBHandler();
     if(!key)
       this.key = "0dce64cd0dce64cd0dce64cdd70da8276100dce0dce64cd56669b6e0611fe0967f5d750";
     else
@@ -25,7 +27,17 @@ module.exports = class vkSubscriber{
                       ids[i] = ids[i].replace(/\r?\n/g, "");
                   }
                   vkApi.getDataByIds("photo_max_orig, has_photo", ids, async (res)=>{
-                      let send = 'epQueue';
+                        let send = 'epQueue';
+                        
+                        //Очистка от id, которые уже были спаршены
+                        res = JSON.parse(res);
+                        res.response = res.response.filter(elem => !dbh.IdIsSet(elem.id));
+                        
+                        if(res.response.length !== 0){
+                            JSON.stringify(res);
+                            ch.sendToQueue(send, Buffer.from(res), {persistent: true});
+                        }
+                      
                       //прокинуть информацию о юзере в следующую очередь
                       ch.sendToQueue(send, Buffer.from(res), {persistent: true});
                   });

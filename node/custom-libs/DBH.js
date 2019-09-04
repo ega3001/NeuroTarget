@@ -1,5 +1,4 @@
 module.exports = class DBHandler{
-    
     constructor(){
         this.ConnectDB();
         this.push_url = 0;
@@ -19,126 +18,86 @@ module.exports = class DBHandler{
             port:       5432,
         });
         this.connection.connect()
-          .then(() => console.log('connected'))
-          .catch(err => console.error('connection error', err.stack));
+          .then(() => console.log('DBHandler is connected to DB'))
+          .catch(err => console.error('DBHandler connection is failed', err.stack));
     }
 
-    AddAvatarUrlsByPersons(persons){
-
-        return new Promise((resolve) => {
-            persons.forEach((person) => {
-                let query = `UPDATE "ParseIDVK" SET "AvatarURL"= '${person['photo_max_orig']}' WHERE "TextID"= '${person['id']}'`;
-
-                this.connection.query(query, err => {
-                    if(err) throw err;
-                    this.push_url++;
-                    resolve();
-                });
-            });
+    AddAvatarUrlByOnlyPerson(person){
+        let query = `UPDATE "ParseIDVK" SET "AvatarURL"= '${person['photo_max_orig']}' WHERE "TextID"= '${person['id']}'`;
+        return new Promise((resolve, reject) => {
+            this.connection.query(query).then((res)=>{
+                person.url = res; 
+                this.push_url++;
+                resolve(person);
+            }).catch((err) => {
+                reject(err);
+            })
         });
     }
 
-    GetParseidById(id){
-        var query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID"='${id}'`;
-        return new Promise(resolve => {
-            this.connection.query(query, (err, res) => {
-                if (err) throw err;
-                try{
-                    if(res['rows'][0] == undefined){
-                        console.log(id);
-                    }
-                }
-                catch(error){
-                    console.log("---------------------------");
-                    console.log(id, res);
-                    console.log(error);
-                    console.log("---------------------------");
-                }
+    GetParseidByOnlyPerson(person){
+        var query = `SELECT "ParseIDVK_ID" FROM "ParseIDVK" WHERE "TextID"='${person.id}'`;
+        return new Promise((resolve, reject) => {
+            this.connection.query(query).then(res=>{
+                person.parse_id = res['rows'][0].ParseIDVK_ID; 
                 this.get_parse_id++;
-                resolve(res['rows'][0].ParseIDVK_ID);
-            });
+                resolve(person);
+            }).catch((err)=>{
+                reject(err);
+            })
         });
+        
     }
 
-    AddTagAndGetTagid(tag_name){
-        tag_name = tag_name.replace("'", "''"); // Экранирование одинарной кавычки для PostgreSQL
-        let query_insert = `INSERT INTO "Tag"("TagName") VALUES ('${tag_name}')`; // Здесь должен быть IGNORE
-            query_insert += `ON CONFLICT DO NOTHING`;
+    AddTagAndGetTagByOnlyPerson(person){
+        return Promise.all(
+            person.keywords.map((keywordinfo) => {
+                let tag_name = keywordinfo.keyword.replace("'", "''"); // Ye?aie?iaaiea iaeia?iie eaau?ee aey PostgreSQL
+                let query_insert = `INSERT INTO "Tag"("TagName") VALUES ('${tag_name}')`; // Caanu aie?ai auou IGNORE
+                    query_insert += `ON CONFLICT DO NOTHING`;
 
-        let query_select = `SELECT "Tag_ID" FROM "Tag" WHERE "TagName" = '${tag_name}'`;
-        
-        return new Promise(resolve => {
-            this.connection.query(query_insert, (err, res) => {
-                if (err) throw err;
-                this.connection.query(query_select, (err, res) => {
-                    if (err) throw err;
-                    this.add_tag++;
-                    resolve(res['rows'][0].Tag_ID);
-                });
-            });
-        });
+                let query_select = `SELECT "Tag_ID" FROM "Tag" WHERE "TagName" = '${tag_name}'`;
+                
+                return this.connection.query(query_insert).then(res => this.connection.query(query_select)).then(res => {keywordinfo.tag_id = res['rows'][0].Tag_ID; this.add_tag++;});
+            })
+        )
+    }
+
+    AddPersonTagsByOnlyPerson(person){
+        return Promise.all(
+            person.keywords.map(async (keywordinfo) => {
+                let query = `INSERT INTO "ParseIDVK-Tag"("ParseIDVK_ID", "Tag_ID", "Value") VALUES('${person.parse_id}','${keywordinfo.tag_id}','${keywordinfo.score}')`; // Caanu aie?ai auou IGNORE
+                    query += `ON CONFLICT DO NOTHING`;
+                return this.connection.query(query).then(()=>{this.push_tag_on_id++;});
+            })
+        )
     }
     
-    AddPersonTags(person){
-        return new Promise(resolve => {
-            person.keywords.forEach(keywordinfo => {
-                let query = `INSERT INTO "ParseIDVK-Tag"("ParseIDVK_ID", "Tag_ID", "Value") VALUES('${person.parse_id}','${keywordinfo.tag_id}','${keywordinfo.score}')`; // Здесь должен быть IGNORE
-                    query += `ON CONFLICT DO NOTHING`;
-
-                this.connection.query(query, err => {
-                    if (err) throw err;
-                    this.push_tag_on_id++;
-                    resolve();
-                });
-            });
-        });
-    }
-
-    async TagsHandle(persons) {
-
-        let personsPromises = [];
-        //Получение tag_id
-        await persons.forEach(person => {
-            person.keywords.forEach(keywordinfo => {
-                let tag_promise = this.AddTagAndGetTagid(keywordinfo.keyword);
-                personsPromises.push(tag_promise);
-                tag_promise.then(res => {
-                    keywordinfo.tag_id = res;
-                });
-            });
-        });
-        
-        //Получение parse_id
-        await persons.forEach(person => {
-            let parseid_promise = this.GetParseidById(person.id);
-            personsPromises.push(parseid_promise);
-            parseid_promise.then(res => {
-                person.parse_id = res;
-            });
-        });
-        //Когда все данные получены:
-        let promises = [];
-        await Promise.all(personsPromises).then(() => {
-            persons.forEach(person => {
-                let promise = this.AddPersonTags(person);
-                promises.push(promise);
-            });
-        });
-        return Promise.all(promises);
-    }
     async HandlePersons(persons){
         this.push_url = 0;
         this.add_tag = 0;
         this.get_parse_id = 0;
         this.push_tag_on_id = 0;
-        let promiseAll = [];
-        let UrlsPromise = this.AddAvatarUrlsByPersons(persons);
-        let TagsPromise = this.TagsHandle(persons);
-
-        promiseAll.push(UrlsPromise);
-        promiseAll.push(TagsPromise);
         
-        return Promise.all(promiseAll);
+        return Promise.all(
+            persons.map(person => {
+                return this.AddAvatarUrlByOnlyPerson(person).then(this.GetParseidByOnlyPerson.bind(this)).then(this.AddTagAndGetTagByOnlyPerson.bind(this)).then(res => {return person;}).then(this.AddPersonTagsByOnlyPerson.bind(this));
+            })
+        );
+    }
+    
+    //Проверка на наличие url
+    IdIsSet(id, url){
+        let query = `SELECT * FROM "ParseIDVK" WHERE "TextID"='${id}' and "AvatarURL" = '${url}'`;
+        return new Promise((resolve, reject) => {
+            this.connection.query(query).then((res)=>{
+                resolve(
+                    res.rows.length !== 0
+                );
+            }).catch((err) => {
+                reject(err);
+            })
+        });
     }
 };
 

@@ -15,7 +15,7 @@ class DBHandler{
 	}
 	private function GetNextQueryPack($arr, &$first, $concat = '', $lFrame = '', $rFrame = '')
 	{
-		$qpack = 800;
+		$qpack = 8000;
 		$arrTemp = array_slice($arr, $first, $qpack);
 
 		$size = count($arrTemp);
@@ -238,7 +238,7 @@ class DBHandler{
 	{
 	    if ($this->auth->isLoggedIn()) {
 	        $user = $this->auth->getUserId();
-	        $query="select \"Query_ID\", \"QueryName\" FROM \"Query\" WHERE \"User_ID\"='{$user}'";
+	        $query="SELECT \"Query_ID\", \"QueryName\" FROM \"Query\" WHERE \"User_ID\"='{$user}' ORDER BY \"Query_ID\"";
 	        $result = [];
 	        foreach ($this->dbh->query($query) as $row) {
 	            $result[count($result)] = $row;
