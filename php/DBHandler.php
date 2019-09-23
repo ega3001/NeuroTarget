@@ -108,26 +108,29 @@ class DBHandler{
 	        try {
 	            //$auth = $GLOBALS['auth'];
 	            $this->auth->login($email, $pass, null);
-	            $query = "select \"check_invite\"('".$email."')";
-	            //echo $query;
+	            $_SESSION['userId'] = $this->auth->getUserId();
+	            return 'Success';
+
+	            // $query = "select \"check_invite\"('".$email."')";
+	            // //echo $query;
 	            
-	            $result = [];
-	            foreach ($this->dbh->query($query) as $row) {
-	                $result[count($result)] = $row;
-	            }
+	            // $result = [];
+	            // foreach ($this->dbh->query($query) as $row) {
+	            //     $result[count($result)] = $row;
+	            // }
 
-	            if (count($result) > 0 AND $result[0][0] == '1') {
-	            	$query = "select \"id\" FROM \"users\" WHERE \"email\" = '{$email}'";
-	            	$res = $this->dbh->query($query);
-	            	$userId = $res->fetchAll()[0][0];
-	            	session_start();
-	            	$_SESSION['userId'] = $userId;
-	            	return 'Success';
-	            }
+	            // if (count($result) > 0 AND $result[0][0] == '1') {
+	            // 	$query = "select \"id\" FROM \"users\" WHERE \"email\" = '{$email}'";
+	            // 	$res = $this->dbh->query($query);
+	            // 	$userId = $res->fetchAll()[0][0];
+	            // 	session_start();
+	            // 	$_SESSION['userId'] = $userId;
+	            	
+	            // }
 
-	            $this->auth->logOut();
-	            // $auth->admin()->deleteUserByEmail($_POST['email']);
-	            return "try another one";
+	            // $this->auth->logOut();
+	            // // $auth->admin()->deleteUserByEmail($_POST['email']);
+	            // return "try another one";
 
 	        } catch (\Delight\Auth\InvalidEmailException $e) {
 	            return 'wrong email address';
@@ -145,9 +148,9 @@ class DBHandler{
 	//--------------------//
 	public function Register($email, $pass, $invite){
 		try{
-			$this->CheckInvite($invite);
+			//$this->CheckInvite($invite);
 			$id = $this->RegisterUserWithoutInvite($email, $pass);
-			$this->ConnectInvite($invite, $id);
+			//$this->ConnectInvite($invite, $id);
 			return 'Success';
 		}
 		catch(Exception $e){

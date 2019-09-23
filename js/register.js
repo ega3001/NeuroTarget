@@ -41,11 +41,10 @@ $(document).ready(() => {
         let email = $('#loginOnForm').val();
         let pass = $('#passOnForm').val();
         let varpass = $('#passConfOnForm').val();
-        let invite = $('#inputTokenOnForm').val();
         if (pass === varpass) {
             let reg = /^[A-Za-z0-9]{5,}$/;
             if (reg.test(pass)) {
-                if(register(email, pass, invite))
+                if(register(email, pass))
                     location = '/';
             } else {
                 throw_error('Ошибка! Пароль должен состоять из английских букв и цифр, а также иметь длину не менее 5 символов');
@@ -62,8 +61,7 @@ $(document).ready(() => {
             url: '/register',
             data: {
                 email: email,
-                pass: pass,
-                invite: invite
+                pass: pass
             },
             method: 'POST',
             async: false,
